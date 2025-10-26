@@ -3,6 +3,7 @@ package com.t0r.sandstormkingbackend.service;
 import com.t0r.sandstormkingbackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.t0r.sandstormkingbackend.model.vo.LoginUserVO;
+import com.t0r.sandstormkingbackend.model.vo.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -55,5 +56,7 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean userLogout(HttpServletRequest request);
+
+    UserVO getUserVO(User user);
 
 }

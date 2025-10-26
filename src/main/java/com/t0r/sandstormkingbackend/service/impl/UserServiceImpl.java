@@ -9,6 +9,7 @@ import com.t0r.sandstormkingbackend.mapper.UserMapper;
 import com.t0r.sandstormkingbackend.model.entity.User;
 import com.t0r.sandstormkingbackend.model.enums.UserRoleEnum;
 import com.t0r.sandstormkingbackend.model.vo.LoginUserVO;
+import com.t0r.sandstormkingbackend.model.vo.UserVO;
 import com.t0r.sandstormkingbackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -132,6 +133,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 移除登录态
         request.getSession().removeAttribute(USER_LOGIN_STATE);
         return true;
+    }
+
+    @Override
+    public UserVO getUserVO(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+        return userVO;
     }
 
     public String getEncryptPassword(String userPassword) {
