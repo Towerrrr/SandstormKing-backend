@@ -32,6 +32,8 @@ public class GamePlayHandler extends TextWebSocketHandler {
     // todo 先写死房间人数
     private final int MAX_PLAYERS = 2;
 
+    private final Map<Long, Long> roomOwnerId = new ConcurrentHashMap<>();
+
     // 每个房间的人数，key: roomId, value: 当前房间人数
     private final Map<Long, Integer> roomPlayerCounts = new ConcurrentHashMap<>();
 
@@ -73,6 +75,7 @@ public class GamePlayHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        // todo 重构代码，整理创建房间和加入房间时判断房间人数和权限的逻辑
         // 保存会话到集合中
         User user = (User) session.getAttributes().get("user");
         Long roomId = (Long) session.getAttributes().get("roomId");

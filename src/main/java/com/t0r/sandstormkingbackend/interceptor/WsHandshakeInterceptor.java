@@ -24,11 +24,14 @@ public class WsHandshakeInterceptor implements HandshakeInterceptor {
     private UserService userService;
 
     @Override
-    public boolean beforeHandshake(@NotNull ServerHttpRequest request, @NotNull ServerHttpResponse response, @NotNull WebSocketHandler wsHandler, @NotNull Map<String, Object> attributes) {
+    public boolean beforeHandshake(@NotNull ServerHttpRequest request,
+                                   @NotNull ServerHttpResponse response,
+                                   @NotNull WebSocketHandler wsHandler,
+                                   @NotNull Map<String, Object> attributes) {
         if (request instanceof ServletServerHttpRequest) {
             HttpServletRequest servletRequest = ((ServletServerHttpRequest) request).getServletRequest();
             // 获取请求参数
-            String pictureId = servletRequest.getParameter("pictureId");
+            String roomId = servletRequest.getParameter("roomId");
             User loginUser = userService.getLoginUser(servletRequest);
             if (ObjUtil.isEmpty(loginUser)) {
                 log.error("用户未登录，拒绝握手");
@@ -37,7 +40,7 @@ public class WsHandshakeInterceptor implements HandshakeInterceptor {
             // 设置 attributes
             attributes.put("user", loginUser);
             attributes.put("userId", loginUser.getId());
-            attributes.put("pictureId", Long.valueOf(pictureId)); // 记得转换为 Long 类型
+            attributes.put("roomId", Long.valueOf(roomId)); // 记得转换为 Long 类型
         }
         return true;
     }

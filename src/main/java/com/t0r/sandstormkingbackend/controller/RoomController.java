@@ -2,15 +2,14 @@ package com.t0r.sandstormkingbackend.controller;
 
 import com.t0r.sandstormkingbackend.common.BaseResponse;
 import com.t0r.sandstormkingbackend.common.ResultUtils;
+import com.t0r.sandstormkingbackend.exception.ErrorCode;
+import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.model.dto.room.RoomAddRequest;
 import com.t0r.sandstormkingbackend.model.entity.Room;
 import com.t0r.sandstormkingbackend.model.entity.User;
 import com.t0r.sandstormkingbackend.service.RoomService;
 import com.t0r.sandstormkingbackend.service.UserService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -32,5 +31,12 @@ public class RoomController {
         return ResultUtils.success(room);
     }
 
+    @GetMapping("/join")
+    public BaseResponse<Boolean> joinRoom(@RequestParam Long roomId, HttpServletRequest request) {
+        ThrowUtils.throwIf(roomId == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        Boolean result = roomService.joinRoom(roomId, loginUser);
+        return ResultUtils.success(result);
+    }
 
 }
