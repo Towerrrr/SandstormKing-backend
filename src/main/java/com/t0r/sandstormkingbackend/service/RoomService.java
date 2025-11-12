@@ -7,4 +7,9 @@ import com.t0r.sandstormkingbackend.model.entity.User;
 public interface RoomService {
 
     Room addRoom(RoomAddRequest roomAddRequest, User loginUser);
+
+    Boolean joinRoom(Long roomId, User loginUser);
+
+
+
 }
