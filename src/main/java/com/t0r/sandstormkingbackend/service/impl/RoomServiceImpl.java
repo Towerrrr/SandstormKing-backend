@@ -1,5 +1,6 @@
 package com.t0r.sandstormkingbackend.service.impl;
 
+import com.t0r.sandstormkingbackend.common.PageRequest;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.model.dto.room.RoomAddRequest;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -34,15 +36,11 @@ public class RoomServiceImpl implements RoomService {
         room.setName(name);
         room.setMaxPlayers(maxPlayers);
         room.setCreatedTime(new Date());
-        // todo 返回前端的vo和在Redis中的一致性怎么保证
-        room.setPlayerIds(new ArrayList<>());
+        room.setPlayerIds(Collections.singletonList(loginUser.getId()));
 
         String roomKey = "room:" + roomId;
-        redisTemplate.opsForHash().put(roomKey, Room.ID, roomId);
-        redisTemplate.opsForHash().put(roomKey, Room.OWNER_ID, loginUser.getId());
-        redisTemplate.opsForHash().put(roomKey, Room.NAME, name);
-        redisTemplate.opsForHash().put(roomKey, Room.MAX_PLAYERS, maxPlayers);
-        redisTemplate.opsForHash().put(roomKey, Room.CREATED_TIME, room.getCreatedTime());
+        Map<String, Object> roomMap = convertRoomToMap(room);
+        redisTemplate.opsForHash().putAll(roomKey, roomMap);
 
         String playersKey = "room:" + roomId + ":players";
         redisTemplate.opsForSet().add(playersKey, loginUser.getId());
@@ -54,58 +52,65 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public Room joinRoom(String roomIdStr, User loginUser) {
+    public Room joinRoom(String roomId, User loginUser) {
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
 
-        // 1. 校验房间是否存在
-        String roomKey = "room:" + roomIdStr;
+        // 判断房间是否存在
+        String roomKey = "room:" + roomId;
         Boolean hasRoom = redisTemplate.hasKey(roomKey);
-        ThrowUtils.throwIf(Boolean.FALSE.equals(hasRoom), ErrorCode.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(Boolean.FALSE.equals(hasRoom), ErrorCode.NOT_FOUND_ERROR, "房间不存在");
 
-        // 2. 校验房间人数未满
+        // 判断房间是否已满
         Integer maxPlayers = (Integer) redisTemplate.opsForHash().get(roomKey, Room.MAX_PLAYERS);
-        String playersKey = "room:" + roomIdStr + ":players";
+        String playersKey = "room:" + roomId + ":players";
         Long currentPlayers = redisTemplate.opsForSet().size(playersKey);
-        ThrowUtils.throwIf(currentPlayers != null && maxPlayers != null && currentPlayers >= maxPlayers, ErrorCode.PARAMS_ERROR, "房间已满");
+        ThrowUtils.throwIf(currentPlayers != null && maxPlayers != null && currentPlayers >= maxPlayers,
+                ErrorCode.PARAMS_ERROR, "房间已满");
 
-        // 3. 用户加入玩家集合
         redisTemplate.opsForSet().add(playersKey, loginUser.getId());
 
-        // 4. 更新房间详情里的playerIds字段（可选，如果你要同步VO和Redis中的一致性）
-        // 你可以读取所有玩家ID，然后更新Room对象（如果有需要）
-        // 这里只是简单把用户加进集合
-
-        // 5. 返回房间详情
         Map<Object, Object> roomMap = redisTemplate.opsForHash().entries(roomKey);
         Room room = convertMapToRoom(roomMap);
 
-        // 从Redis拿出所有玩家ID，设置到Room对象
         Set<Object> playerIdSet = redisTemplate.opsForSet().members(playersKey);
         if (playerIdSet != null) {
-            List<Long> playerIds = new ArrayList<>();
-            for (Object idObj : playerIdSet) {
-                playerIds.add(Long.valueOf(String.valueOf(idObj)));
-            }
-            room.setPlayerIds(playerIds);
+            List<Long> playerIdList = playerIdSet.stream()
+                    .map(obj -> Long.valueOf(obj.toString()))
+                    .collect(Collectors.toList());
+            room.setPlayerIds(playerIdList);
         }
-
         return room;
     }
 
-    // 可以写一个辅助方法将Hash转为Room对象
     private Room convertMapToRoom(Map<Object, Object> map) {
         Room room = new Room();
         if (map == null) return room;
         if (map.containsKey(Room.ID)) room.setId(Long.valueOf(String.valueOf(map.get(Room.ID))));
         if (map.containsKey(Room.OWNER_ID)) room.setOwnerId(Long.valueOf(String.valueOf(map.get(Room.OWNER_ID))));
         if (map.containsKey(Room.NAME)) room.setName(String.valueOf(map.get(Room.NAME)));
-        if (map.containsKey(Room.MAX_PLAYERS)) room.setMaxPlayers(Integer.valueOf(String.valueOf(map.get(Room.MAX_PLAYERS))));
+        if (map.containsKey(Room.MAX_PLAYERS))
+            room.setMaxPlayers(Integer.parseInt(String.valueOf(map.get(Room.MAX_PLAYERS))));
         if (map.containsKey(Room.CREATED_TIME)) room.setCreatedTime((Date) map.get(Room.CREATED_TIME));
-        // 其它字段...
         return room;
     }
 
-    public List<Room> listRooms(int page, int pageSize) {
+    private Map<String, Object> convertRoomToMap(Room room) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(Room.ID, room.getId());
+        map.put(Room.OWNER_ID, room.getOwnerId());
+        map.put(Room.NAME, room.getName());
+        map.put(Room.MAX_PLAYERS, room.getMaxPlayers());
+        map.put(Room.CREATED_TIME, room.getCreatedTime().getTime());
+        return map;
+    }
+
+    @Override
+    public List<Room> listRooms(PageRequest pageRequest) {
+        int current = pageRequest.getCurrent();
+        int pageSize = pageRequest.getPageSize();
+        String sortField = pageRequest.getSortField();
+        String sortOrder = pageRequest.getSortOrder();
+
         long start = (long) (page - 1) * pageSize;
         long end = start + pageSize - 1;
         Set<Object> roomIdSet = redisTemplate.opsForZSet().reverseRange("room:list", start, end);
