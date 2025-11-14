@@ -27,7 +27,7 @@ public class Room {
 
     private int maxPlayers;
 
-    private Date createdTime;
+    private Long createdTime;
 
     // todo 等无人连接之后过五分钟过期
     // private Long expireTime;

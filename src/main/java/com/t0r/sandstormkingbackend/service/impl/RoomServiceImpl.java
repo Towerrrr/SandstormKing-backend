@@ -23,7 +23,29 @@ public class RoomServiceImpl implements RoomService {
     private RedisTemplate<String, Object> redisTemplate;
 
     @Override
-    public Room addRoom(RoomAddRequest roomAddRequest, User loginUser) {
+    public List<Room> listRooms(PageRequest pageRequest) {
+        int current = pageRequest.getCurrent();
+        int pageSize = pageRequest.getPageSize();
+
+        long start = (long) (current - 1) * pageSize;
+        long end = start + pageSize - 1;
+
+        Set<Object> roomIdSet = redisTemplate.opsForZSet().reverseRange("room:list", start, end);
+        List<Room> roomList = new ArrayList<>();
+        if (roomIdSet != null) {
+            for (Object roomId : roomIdSet) {
+                String roomKey = "room:" + roomId;
+                Map<Object, Object> roomMap = redisTemplate.opsForHash().entries(roomKey);
+                Room room = convertMapToRoom(roomMap);
+                roomList.add(room);
+            }
+        }
+        return roomList;
+    }
+
+    // todo 控制一个用户只能创建一个房间
+    @Override
+    public Room createRoom(RoomAddRequest roomAddRequest, User loginUser) {
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
 
         Long roomId = redisTemplate.opsForValue().increment("room:id:incr");
@@ -35,7 +57,7 @@ public class RoomServiceImpl implements RoomService {
         room.setOwnerId(loginUser.getId());
         room.setName(name);
         room.setMaxPlayers(maxPlayers);
-        room.setCreatedTime(new Date());
+        room.setCreatedTime(new Date().getTime());
         room.setPlayerIds(Collections.singletonList(loginUser.getId()));
 
         String roomKey = "room:" + roomId;
@@ -45,14 +67,13 @@ public class RoomServiceImpl implements RoomService {
         String playersKey = "room:" + roomId + ":players";
         redisTemplate.opsForSet().add(playersKey, loginUser.getId());
 
-        double score = room.getCreatedTime().getTime();
-        redisTemplate.opsForZSet().add("room:list", roomId, score);
+        redisTemplate.opsForZSet().add("room:list", roomId, room.getCreatedTime());
 
         return room;
     }
 
     @Override
-    public Room joinRoom(String roomId, User loginUser) {
+    public Room joinRoom(Long roomId, User loginUser) {
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
 
         // 判断房间是否存在
@@ -70,16 +91,8 @@ public class RoomServiceImpl implements RoomService {
         redisTemplate.opsForSet().add(playersKey, loginUser.getId());
 
         Map<Object, Object> roomMap = redisTemplate.opsForHash().entries(roomKey);
-        Room room = convertMapToRoom(roomMap);
 
-        Set<Object> playerIdSet = redisTemplate.opsForSet().members(playersKey);
-        if (playerIdSet != null) {
-            List<Long> playerIdList = playerIdSet.stream()
-                    .map(obj -> Long.valueOf(obj.toString()))
-                    .collect(Collectors.toList());
-            room.setPlayerIds(playerIdList);
-        }
-        return room;
+        return convertMapToRoom(roomMap);
     }
 
     private Room convertMapToRoom(Map<Object, Object> map) {
@@ -90,7 +103,16 @@ public class RoomServiceImpl implements RoomService {
         if (map.containsKey(Room.NAME)) room.setName(String.valueOf(map.get(Room.NAME)));
         if (map.containsKey(Room.MAX_PLAYERS))
             room.setMaxPlayers(Integer.parseInt(String.valueOf(map.get(Room.MAX_PLAYERS))));
-        if (map.containsKey(Room.CREATED_TIME)) room.setCreatedTime((Date) map.get(Room.CREATED_TIME));
+        if (map.containsKey(Room.CREATED_TIME)) room.setCreatedTime(Long.valueOf(String.valueOf(map.get(Room.CREATED_TIME))));
+
+        String playersKey = "room:" + map.get(Room.ID) + ":players";
+        Set<Object> playerIdSet = redisTemplate.opsForSet().members(playersKey);
+        if (playerIdSet != null) {
+            List<Long> playerIdList = playerIdSet.stream()
+                    .map(obj -> Long.valueOf(obj.toString()))
+                    .collect(Collectors.toList());
+            room.setPlayerIds(playerIdList);
+        }
         return room;
     }
 
@@ -100,29 +122,8 @@ public class RoomServiceImpl implements RoomService {
         map.put(Room.OWNER_ID, room.getOwnerId());
         map.put(Room.NAME, room.getName());
         map.put(Room.MAX_PLAYERS, room.getMaxPlayers());
-        map.put(Room.CREATED_TIME, room.getCreatedTime().getTime());
+        map.put(Room.CREATED_TIME, room.getCreatedTime());
         return map;
-    }
-
-    @Override
-    public List<Room> listRooms(PageRequest pageRequest) {
-        int current = pageRequest.getCurrent();
-        int pageSize = pageRequest.getPageSize();
-        String sortField = pageRequest.getSortField();
-        String sortOrder = pageRequest.getSortOrder();
-
-        long start = (long) (page - 1) * pageSize;
-        long end = start + pageSize - 1;
-        Set<Object> roomIdSet = redisTemplate.opsForZSet().reverseRange("room:list", start, end);
-        List<Room> roomList = new ArrayList<>();
-        if (roomIdSet != null) {
-            for (Object roomId : roomIdSet) {
-                String roomKey = "room:" + roomId;
-                Map<Object, Object> roomMap = redisTemplate.opsForHash().entries(roomKey);
-                roomList.add(room);
-            }
-        }
-        return roomList;
     }
 
 }
