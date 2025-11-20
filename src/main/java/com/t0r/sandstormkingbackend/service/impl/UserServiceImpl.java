@@ -15,8 +15,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.t0r.sandstormkingbackend.constant.UserConstant.USER_LOGIN_STATE;
 
@@ -29,6 +35,9 @@ import static com.t0r.sandstormkingbackend.constant.UserConstant.USER_LOGIN_STAT
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     implements UserService {
+
+    @Resource
+    private UserMapper userMapper;
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -143,6 +152,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         return userVO;
+    }
+
+    @Override
+    public List<UserVO> getUsersByIds(List<Long> userIdList) {
+        if (CollectionUtils.isEmpty(userIdList)) {
+            return new ArrayList<>();
+        }
+        List<User> users = userMapper.selectBatchIds(userIdList);
+
+        return users.stream()
+                .map(user -> {
+                    UserVO vo = new UserVO();
+                    vo.setId(user.getId());
+                    vo.setUserName(user.getUserName());
+                    vo.setUserAccount(user.getUserAccount());
+                    vo.setUserAvatar(user.getUserAvatar());
+                    vo.setUserProfile(user.getUserProfile());
+                    vo.setUserRole(user.getUserRole());
+                    vo.setCreateTime(user.getCreateTime());
+                    return vo;
+                })
+                .collect(Collectors.toList());
     }
 
     public String getEncryptPassword(String userPassword) {

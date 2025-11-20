@@ -6,6 +6,7 @@ import com.t0r.sandstormkingbackend.model.vo.LoginUserVO;
 import com.t0r.sandstormkingbackend.model.vo.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author Towerrrr
@@ -59,4 +60,5 @@ public interface UserService extends IService<User> {
 
     UserVO getUserVO(User user);
 
+    List<UserVO> getUsersByIds(List<Long> userIdList);
 }
