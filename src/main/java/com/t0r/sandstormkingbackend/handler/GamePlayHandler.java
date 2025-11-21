@@ -11,7 +11,9 @@ import com.t0r.sandstormkingbackend.model.dto.game.WebSocketResponseMessage;
 import com.t0r.sandstormkingbackend.model.entity.User;
 import com.t0r.sandstormkingbackend.model.enums.PlayerActionEnum;
 import com.t0r.sandstormkingbackend.model.enums.WebSocketMessageTypeEnum;
+import com.t0r.sandstormkingbackend.service.RoomService;
 import com.t0r.sandstormkingbackend.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -23,19 +25,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Component
 public class GamePlayHandler extends TextWebSocketHandler {
 
     @Resource
     private UserService userService;
 
-    // todo 先写死房间人数
-    private final int MAX_PLAYERS = 2;
+    @Resource
+    private RoomService roomService;
 
     private final Map<Long, Long> roomOwnerId = new ConcurrentHashMap<>();
-
-    // 每个房间的人数，key: roomId, value: 当前房间人数
-    private final Map<Long, Integer> roomPlayerCounts = new ConcurrentHashMap<>();
 
     // 保存所有连接的会话，key: 房间 ID, value: 用户会话集合
     private final Map<Long, Set<WebSocketSession>> playerSessions = new ConcurrentHashMap<>();
@@ -75,22 +75,27 @@ public class GamePlayHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        // todo 重构代码，整理创建房间和加入房间时判断房间人数和权限的逻辑
-        // 保存会话到集合中
         User user = (User) session.getAttributes().get("user");
         Long roomId = (Long) session.getAttributes().get("roomId");
-        playerSessions.putIfAbsent(roomId, ConcurrentHashMap.newKeySet());
+
+        log.info("WebSocket连接中，用户：{}，房间：{}", user.getUserName(), roomId);
+
+        Long ownerId = roomOwnerId.get(roomId);
+        if (ownerId == null) { // 创建房间
+            roomOwnerId.put(roomId, user.getId());
+            playerSessions.putIfAbsent(roomId, ConcurrentHashMap.newKeySet());
+        } else { // 加入房间
+            // 构造响应
+            WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
+            webSocketResponseMessage.setType(WebSocketMessageTypeEnum.INFO.getValue());
+            String message = String.format("%s加入房间", user.getUserName());
+            webSocketResponseMessage.setMessage(message);
+            webSocketResponseMessage.setUser(userService.getUserVO(user));
+
+            // 广播给同一房间的玩家
+            broadcastToPlayers(roomId, webSocketResponseMessage);
+        }
         playerSessions.get(roomId).add(session);
-
-        // 构造响应
-        WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-        webSocketResponseMessage.setType(WebSocketMessageTypeEnum.INFO.getValue());
-        String message = String.format("%s加入房间", user.getUserName());
-        webSocketResponseMessage.setMessage(message);
-        webSocketResponseMessage.setUser(userService.getUserVO(user));
-
-        // 广播给同一房间的玩家
-        broadcastToPlayers(roomId, webSocketResponseMessage);
     }
 
     @Override
@@ -107,9 +112,6 @@ public class GamePlayHandler extends TextWebSocketHandler {
 
         // 调用对应的消息处理方法
         switch (webSocketMessageTypeEnum) {
-            case JOIN_ROOM:
-                handleJoinRoomMessage(webSocketRequestMessage, session, user, roomId);
-                break;
             case LEAVE_ROOM:
                 handleLeaveRoomMessage(webSocketRequestMessage, session, user, roomId);
                 break;
@@ -158,36 +160,15 @@ public class GamePlayHandler extends TextWebSocketHandler {
         broadcastToPlayers(pictureId, pictureEditResponseMessage, session);
     }
 
-    public void handleJoinRoomMessage(WebSocketRequestMessage webSocketRequestMessage,
-                                      WebSocketSession session,
-                                      User user, Long roomId) throws Exception {
-        // 当前房间人数小于最大值，才能进入
-        if (roomPlayerCounts.get(roomId) < MAX_PLAYERS) {
-            roomPlayerCounts.put(roomId, roomPlayerCounts.get(roomId) + 1);
-
-            WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-            webSocketResponseMessage.setType(WebSocketMessageTypeEnum.JOIN_ROOM.getValue());
-            String message = String.format("%s进入房间", user.getUserName());
-            webSocketResponseMessage.setMessage(message);
-            webSocketResponseMessage.setUser(userService.getUserVO(user));
-            broadcastToPlayers(roomId, webSocketResponseMessage);
-        }
-    }
-
     public void handleLeaveRoomMessage(WebSocketRequestMessage webSocketRequestMessage,
                                        WebSocketSession session,
                                        User user, Long roomId) throws Exception {
-        Integer currentRoomPlayerCount = roomPlayerCounts.get(roomId);
-        if (currentRoomPlayerCount != null) {
-            roomPlayerCounts.put(roomId, roomPlayerCounts.get(roomId) - 1);
-
-            WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-            webSocketResponseMessage.setType(WebSocketMessageTypeEnum.LEAVE_ROOM.getValue());
-            String message = String.format("%s离开房间", user.getUserName());
-            webSocketResponseMessage.setMessage(message);
-            webSocketResponseMessage.setUser(userService.getUserVO(user));
-            broadcastToPlayers(roomId, webSocketResponseMessage);
-        }
+        WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
+        webSocketResponseMessage.setType(WebSocketMessageTypeEnum.LEAVE_ROOM.getValue());
+        String message = String.format("%s离开房间", user.getUserName());
+        webSocketResponseMessage.setMessage(message);
+        webSocketResponseMessage.setUser(userService.getUserVO(user));
+        broadcastToPlayers(roomId, webSocketResponseMessage);
     }
 
     @Override
@@ -215,7 +196,6 @@ public class GamePlayHandler extends TextWebSocketHandler {
         webSocketResponseMessage.setUser(userService.getUserVO(user));
         broadcastToPlayers(roomId, webSocketResponseMessage);
     }
-
 
 
 }
