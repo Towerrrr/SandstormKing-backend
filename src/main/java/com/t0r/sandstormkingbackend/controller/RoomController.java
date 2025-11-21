@@ -47,6 +47,12 @@ public class RoomController {
         return ResultUtils.success(room);
     }
 
-
+    @GetMapping("/quit")
+    public BaseResponse<Boolean> quitRoom(@RequestParam Long roomId, HttpServletRequest request) {
+        ThrowUtils.throwIf(roomId == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        boolean isQuit = roomService.quitRoom(roomId, loginUser);
+        return ResultUtils.success(isQuit);
+    }
 
 }

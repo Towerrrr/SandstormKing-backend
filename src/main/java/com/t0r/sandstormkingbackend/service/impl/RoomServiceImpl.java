@@ -43,6 +43,51 @@ public class RoomServiceImpl implements RoomService {
         return roomList;
     }
 
+    @Override
+    public boolean quitRoom(Long roomId, User loginUser) {
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
+        ThrowUtils.throwIf(roomId == null || roomId <= 0, ErrorCode.PARAMS_ERROR, "房间ID无效");
+
+        String roomKey = "room:" + roomId;
+        String playersKey = "room:" + roomId + ":players";
+
+        Boolean hasRoom = redisTemplate.hasKey(roomKey);
+        ThrowUtils.throwIf(Boolean.FALSE.equals(hasRoom), ErrorCode.NOT_FOUND_ERROR, "房间不存在");
+
+        Long removedCount = redisTemplate.opsForSet().remove(playersKey, loginUser.getId());
+        if (removedCount == null || removedCount == 0) {
+            // 用户本来就不在房间
+            return false;
+        }
+
+        // 检查用户是否为房主
+        Object ownerIdObj = redisTemplate.opsForHash().get(roomKey, Room.OWNER_ID);
+        Long ownerId = ownerIdObj != null ? Long.valueOf(ownerIdObj.toString()) : null;
+
+        boolean isOwner = loginUser.getId().equals(ownerId);
+
+        // 获取退出后的所有成员
+        Set<Object> playerIdSet = redisTemplate.opsForSet().members(playersKey);
+
+        if (isOwner) {
+            if (playerIdSet != null && !playerIdSet.isEmpty()) {
+                Long newOwnerId = Long.valueOf(playerIdSet.iterator().next().toString());
+                redisTemplate.opsForHash().put(roomKey, Room.OWNER_ID, newOwnerId);
+            } else {
+                redisTemplate.delete(roomKey);
+                redisTemplate.opsForZSet().remove("room:list", roomId);
+                redisTemplate.delete(playersKey);
+            }
+        } else { // 非房主，检查是否没人了
+            if (playerIdSet == null || playerIdSet.isEmpty()) {
+                redisTemplate.delete(roomKey);
+                redisTemplate.opsForZSet().remove("room:list", roomId);
+                redisTemplate.delete(playersKey);
+            }
+        }
+        return true;
+    }
+
     // todo 控制一个用户只能创建一个房间
     @Override
     public Room createRoom(RoomAddRequest roomAddRequest, User loginUser) {

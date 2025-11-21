@@ -15,4 +15,6 @@ public interface RoomService {
 
     List<Room> listRooms(PageRequest pageRequest);
 
+    boolean quitRoom(Long roomId, User loginUser);
+
 }
