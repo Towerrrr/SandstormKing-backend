@@ -1,10 +1,12 @@
 package com.t0r.sandstormkingbackend.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.common.PageRequest;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.model.dto.room.RoomAddRequest;
 import com.t0r.sandstormkingbackend.model.entity.Room;
+import com.t0r.sandstormkingbackend.model.entity.RoomMember;
 import com.t0r.sandstormkingbackend.model.entity.User;
 import com.t0r.sandstormkingbackend.service.RoomService;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.t0r.sandstormkingbackend.model.entity.Room.convertRoomToMap;
 
 @Slf4j
 @Service
@@ -56,13 +60,13 @@ public class RoomServiceImpl implements RoomService {
         ThrowUtils.throwIf(roomId == null || roomId <= 0, ErrorCode.PARAMS_ERROR, "房间ID无效");
 
         String roomKey = "room:" + roomId;
-        String playersKey = "room:" + roomId + ":players";
+        String playersKey = "room:" + roomId + ":members";
 
         Boolean hasRoom = redisTemplate.hasKey(roomKey);
         ThrowUtils.throwIf(Boolean.FALSE.equals(hasRoom), ErrorCode.NOT_FOUND_ERROR, "房间不存在");
 
-        Long removedCount = redisTemplate.opsForSet().remove(playersKey, loginUser.getId());
-        if (removedCount == null || removedCount == 0) {
+        Long removedCount = redisTemplate.opsForHash().delete(playersKey, String.valueOf(loginUser.getId()));
+        if (removedCount == 0) {
             // 用户本来就不在房间
             return false;
         }
@@ -73,11 +77,12 @@ public class RoomServiceImpl implements RoomService {
 
         boolean isOwner = loginUser.getId().equals(ownerId);
 
-        // 获取退出后的所有成员
-        Set<Object> playerIdSet = redisTemplate.opsForSet().members(playersKey);
+        // 获取退出后的所有成员（用 hash 的 keys 判断）
+        Map<Object, Object> playerMap = redisTemplate.opsForHash().entries(playersKey);
+        Set<Object> playerIdSet = playerMap.keySet();
 
         if (isOwner) {
-            if (playerIdSet != null && !playerIdSet.isEmpty()) {
+            if (!playerIdSet.isEmpty()) {
                 Long newOwnerId = Long.valueOf(playerIdSet.iterator().next().toString());
                 redisTemplate.opsForHash().put(roomKey, Room.OWNER_ID, newOwnerId);
             } else {
@@ -86,7 +91,7 @@ public class RoomServiceImpl implements RoomService {
                 redisTemplate.delete(playersKey);
             }
         } else { // 非房主，检查是否没人了
-            if (playerIdSet == null || playerIdSet.isEmpty()) {
+            if (playerIdSet.isEmpty()) {
                 redisTemplate.delete(roomKey);
                 redisTemplate.opsForZSet().remove("room:list", roomId);
                 redisTemplate.delete(playersKey);
@@ -103,6 +108,9 @@ public class RoomServiceImpl implements RoomService {
         Long roomId = redisTemplate.opsForValue().increment("room:id:incr");
         String name = roomAddRequest.getName();
         int maxPlayers = roomAddRequest.getMaxPlayers();
+        RoomMember roomMember = new RoomMember();
+        roomMember.setUserId(loginUser.getId());
+        roomMember.setReady(false);
 
         Room room = new Room();
         room.setId(roomId);
@@ -110,16 +118,18 @@ public class RoomServiceImpl implements RoomService {
         room.setName(name);
         room.setMaxPlayers(maxPlayers);
         room.setCreatedTime(new Date().getTime());
-        room.setPlayerIds(Collections.singletonList(loginUser.getId()));
+        room.setRoomMembers(Collections.singletonList(roomMember));
 
         String roomKey = "room:" + roomId;
         Map<String, Object> roomMap = convertRoomToMap(room);
         redisTemplate.opsForHash().putAll(roomKey, roomMap);
 
-        String playersKey = "room:" + roomId + ":players";
-        redisTemplate.opsForSet().add(playersKey, loginUser.getId());
+        String playersKey = "room:" + roomId + ":members";
+        redisTemplate.opsForHash().put(playersKey, String.valueOf(loginUser.getId()), JSONUtil.toJsonStr(roomMember));
 
-        redisTemplate.opsForZSet().add("room:list", roomId, room.getCreatedTime());
+        if (roomId != null) {
+            redisTemplate.opsForZSet().add("room:list", roomId, room.getCreatedTime());
+        }
 
         return room;
     }
@@ -135,12 +145,15 @@ public class RoomServiceImpl implements RoomService {
 
         // 判断房间是否已满
         Integer maxPlayers = (Integer) redisTemplate.opsForHash().get(roomKey, Room.MAX_PLAYERS);
-        String playersKey = "room:" + roomId + ":players";
-        Long currentPlayers = redisTemplate.opsForSet().size(playersKey);
-        ThrowUtils.throwIf(currentPlayers != null && maxPlayers != null && currentPlayers >= maxPlayers,
+        String playersKey = "room:" + roomId + ":members";
+        Long currentPlayers = redisTemplate.opsForHash().size(playersKey); // 用 hash size
+        ThrowUtils.throwIf(maxPlayers != null && currentPlayers >= maxPlayers,
                 ErrorCode.PARAMS_ERROR, "房间已满");
 
-        redisTemplate.opsForSet().add(playersKey, loginUser.getId());
+        RoomMember roomMember = new RoomMember();
+        roomMember.setUserId(loginUser.getId());
+        roomMember.setReady(false);
+        redisTemplate.opsForHash().put(playersKey, String.valueOf(loginUser.getId()), JSONUtil.toJsonStr(roomMember));
 
         Map<Object, Object> roomMap = redisTemplate.opsForHash().entries(roomKey);
 
@@ -157,25 +170,18 @@ public class RoomServiceImpl implements RoomService {
             room.setMaxPlayers(Integer.parseInt(String.valueOf(map.get(Room.MAX_PLAYERS))));
         if (map.containsKey(Room.CREATED_TIME)) room.setCreatedTime(Long.valueOf(String.valueOf(map.get(Room.CREATED_TIME))));
 
-        String playersKey = "room:" + map.get(Room.ID) + ":players";
-        Set<Object> playerIdSet = redisTemplate.opsForSet().members(playersKey);
-        if (playerIdSet != null) {
-            List<Long> playerIdList = playerIdSet.stream()
-                    .map(obj -> Long.valueOf(obj.toString()))
+        String playersKey = "room:" + map.get(Room.ID) + ":members";
+        Map<Object, Object> playerMap = redisTemplate.opsForHash().entries(playersKey);
+        List<RoomMember> roomMembers = new ArrayList<>();
+        if (!playerMap.isEmpty()) {
+            roomMembers = playerMap.values().stream()
+                    .map(obj -> JSONUtil.toBean(String.valueOf(obj), RoomMember.class))
                     .collect(Collectors.toList());
-            room.setPlayerIds(playerIdList);
         }
+        room.setRoomMembers(roomMembers);
+
         return room;
     }
 
-    private Map<String, Object> convertRoomToMap(Room room) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(Room.ID, room.getId());
-        map.put(Room.OWNER_ID, room.getOwnerId());
-        map.put(Room.NAME, room.getName());
-        map.put(Room.MAX_PLAYERS, room.getMaxPlayers());
-        map.put(Room.CREATED_TIME, room.getCreatedTime());
-        return map;
-    }
 
 }
