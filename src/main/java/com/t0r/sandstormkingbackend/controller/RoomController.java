@@ -26,6 +26,13 @@ public class RoomController {
     @Resource
     private RoomService roomService;
 
+    @GetMapping("/get")
+    public BaseResponse<Room> getRoom(@RequestParam Long roomId, HttpServletRequest request) {
+        ThrowUtils.throwIf(roomId == null, ErrorCode.PARAMS_ERROR);
+        Room room = roomService.getById(roomId);
+        return ResultUtils.success(room);
+    }
+
     @GetMapping("/list")
     public BaseResponse<List<Room>> listRooms(PageRequest pageRequest, HttpServletRequest request) {
         List<Room> roomList = roomService.listRooms(pageRequest);

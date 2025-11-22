@@ -23,6 +23,13 @@ public class RoomServiceImpl implements RoomService {
     private RedisTemplate<String, Object> redisTemplate;
 
     @Override
+    public Room getById(Long roomId) {
+        String roomKey = "room:" + roomId;
+        Map<Object, Object> roomMap = redisTemplate.opsForHash().entries(roomKey);
+        return convertMapToRoom(roomMap);
+    }
+
+    @Override
     public List<Room> listRooms(PageRequest pageRequest) {
         int current = pageRequest.getCurrent();
         int pageSize = pageRequest.getPageSize();

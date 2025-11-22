@@ -17,4 +17,5 @@ public interface RoomService {
 
     boolean quitRoom(Long roomId, User loginUser);
 
+    Room getById(Long roomId);
 }
