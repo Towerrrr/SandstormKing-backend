@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.common.PageRequest;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
+import com.t0r.sandstormkingbackend.model.dto.room.ReadyRequest;
 import com.t0r.sandstormkingbackend.model.dto.room.RoomAddRequest;
 import com.t0r.sandstormkingbackend.model.entity.Room;
 import com.t0r.sandstormkingbackend.model.entity.RoomMember;
@@ -25,6 +26,47 @@ public class RoomServiceImpl implements RoomService {
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Override
+    public Boolean ready(ReadyRequest readyRequest, User loginUser) {
+        Long roomId = readyRequest.getRoomId();
+        boolean ready = readyRequest.isReady();
+
+        String roomKey = "room:" + roomId;
+        String playersKey = "room:" + roomId + ":members";
+        String userIdStr = String.valueOf(loginUser.getId());
+        String roomMemberStr = (String) redisTemplate.opsForHash().get(playersKey, userIdStr);
+        RoomMember roomMember = JSONUtil.toBean(roomMemberStr, RoomMember.class);
+        roomMember.setReady(ready);
+        redisTemplate.opsForHash().put(playersKey, userIdStr, JSONUtil.toJsonStr(roomMember));
+        return true;
+    }
+
+    @Override
+    public Boolean startGame(Long roomId, User loginUser) {
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
+        ThrowUtils.throwIf(roomId == null || roomId <= 0, ErrorCode.PARAMS_ERROR, "房间ID无效");
+
+        boolean isOwner = loginUser.getId().equals(getById(roomId).getOwnerId());
+        ThrowUtils.throwIf(!isOwner, ErrorCode.FORBIDDEN_ERROR, "你不是房主，不能开始游戏");
+
+        String playersKey = "room:" + roomId + ":members";
+        Map<Object, Object> playerMap = redisTemplate.opsForHash().entries(playersKey);
+
+        List<RoomMember> roomMembers = playerMap.values().stream()
+                .map(obj -> JSONUtil.toBean(String.valueOf(obj), RoomMember.class))
+                .peek(member -> {
+                    if (!member.getReady()) {
+                        ThrowUtils.throwIf(true, ErrorCode.PARAMS_ERROR, "房间内有玩家未准备好");
+                    }
+                })
+                .collect(Collectors.toList());
+
+        log.info("开始游戏，房间ID：{}，房主ID：{}", roomId, loginUser.getId());
+        // todo 开始游戏
+
+        return true;
+    }
 
     @Override
     public Room getById(Long roomId) {
@@ -168,7 +210,8 @@ public class RoomServiceImpl implements RoomService {
         if (map.containsKey(Room.NAME)) room.setName(String.valueOf(map.get(Room.NAME)));
         if (map.containsKey(Room.MAX_PLAYERS))
             room.setMaxPlayers(Integer.parseInt(String.valueOf(map.get(Room.MAX_PLAYERS))));
-        if (map.containsKey(Room.CREATED_TIME)) room.setCreatedTime(Long.valueOf(String.valueOf(map.get(Room.CREATED_TIME))));
+        if (map.containsKey(Room.CREATED_TIME))
+            room.setCreatedTime(Long.valueOf(String.valueOf(map.get(Room.CREATED_TIME))));
 
         String playersKey = "room:" + map.get(Room.ID) + ":members";
         Map<Object, Object> playerMap = redisTemplate.opsForHash().entries(playersKey);

@@ -5,6 +5,7 @@ import com.t0r.sandstormkingbackend.common.PageRequest;
 import com.t0r.sandstormkingbackend.common.ResultUtils;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
+import com.t0r.sandstormkingbackend.model.dto.room.ReadyRequest;
 import com.t0r.sandstormkingbackend.model.dto.room.RoomAddRequest;
 import com.t0r.sandstormkingbackend.model.entity.Room;
 import com.t0r.sandstormkingbackend.model.entity.User;
@@ -60,6 +61,22 @@ public class RoomController {
         User loginUser = userService.getLoginUser(request);
         boolean isQuit = roomService.quitRoom(roomId, loginUser);
         return ResultUtils.success(isQuit);
+    }
+
+    @PostMapping("/ready")
+    public BaseResponse<Boolean> ready(@RequestBody ReadyRequest readyRequest, HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        Boolean isReady = roomService.ready(readyRequest, loginUser);
+        return ResultUtils.success(isReady);
+    }
+
+    // 开始游戏
+    @GetMapping("/start")
+    public BaseResponse<Boolean> startGame(@RequestParam Long roomId, HttpServletRequest request) {
+        ThrowUtils.throwIf(roomId == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        Boolean isStart = roomService.startGame(roomId, loginUser);
+        return ResultUtils.success(isStart);
     }
 
 }
