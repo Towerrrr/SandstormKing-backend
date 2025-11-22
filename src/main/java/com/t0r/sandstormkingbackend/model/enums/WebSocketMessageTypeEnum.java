@@ -7,8 +7,7 @@ public enum WebSocketMessageTypeEnum {
 
     INFO("发送通知", "INFO"),
     ERROR("发送错误", "ERROR"),
-    JOIN_ROOM("加入房间", "JOIN_ROOM"),
-    LEAVE_ROOM("离开房间", "LEAVE_ROOM"),
+    ROOM_STATE_CHANGED("房间状态变更", "ROOM_STATE_CHANGED"),
     START_GAME("开始游戏", "START_GAME"),
     GAME_STATE("游戏状态更新", "GAME_STATE"),
     GAME_OVER("游戏结束", "GAME_OVER"),

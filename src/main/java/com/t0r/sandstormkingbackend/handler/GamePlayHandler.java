@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.sun.istack.internal.NotNull;
 import com.t0r.sandstormkingbackend.model.dto.game.WebSocketRequestMessage;
 import com.t0r.sandstormkingbackend.model.dto.game.WebSocketResponseMessage;
+import com.t0r.sandstormkingbackend.model.entity.Room;
 import com.t0r.sandstormkingbackend.model.entity.User;
 import com.t0r.sandstormkingbackend.model.enums.PlayerActionEnum;
 import com.t0r.sandstormkingbackend.model.enums.WebSocketMessageTypeEnum;
@@ -87,7 +88,7 @@ public class GamePlayHandler extends TextWebSocketHandler {
         } else { // 加入房间
             // 构造响应
             WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-            webSocketResponseMessage.setType(WebSocketMessageTypeEnum.INFO.getValue());
+            webSocketResponseMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
             String message = String.format("%s加入房间", user.getUserName());
             webSocketResponseMessage.setMessage(message);
             webSocketResponseMessage.setUser(userService.getUserVO(user));
@@ -112,9 +113,6 @@ public class GamePlayHandler extends TextWebSocketHandler {
 
         // 调用对应的消息处理方法
         switch (webSocketMessageTypeEnum) {
-            case LEAVE_ROOM:
-                handleLeaveRoomMessage(webSocketRequestMessage, session, user, roomId);
-                break;
             case START_GAME:
                 // todo 补充函数
 //                handleStartGameMessage(webSocketRequestMessage, session, user, roomId);
@@ -160,25 +158,12 @@ public class GamePlayHandler extends TextWebSocketHandler {
         broadcastToPlayers(pictureId, pictureEditResponseMessage, session);
     }
 
-    public void handleLeaveRoomMessage(WebSocketRequestMessage webSocketRequestMessage,
-                                       WebSocketSession session,
-                                       User user, Long roomId) throws Exception {
-        WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-        webSocketResponseMessage.setType(WebSocketMessageTypeEnum.LEAVE_ROOM.getValue());
-        String message = String.format("%s离开房间", user.getUserName());
-        webSocketResponseMessage.setMessage(message);
-        webSocketResponseMessage.setUser(userService.getUserVO(user));
-        broadcastToPlayers(roomId, webSocketResponseMessage);
-    }
-
     @Override
     public void afterConnectionClosed(WebSocketSession session, @NotNull CloseStatus status) throws Exception {
         Map<String, Object> attributes = session.getAttributes();
         Long roomId = (Long) attributes.get("roomId");
         User user = (User) attributes.get("user");
-        // 离开房间
         // todo 可能是变成断开连接状态
-        handleLeaveRoomMessage(null, session, user, roomId);
 
         // 删除会话
         Set<WebSocketSession> sessionSet = playerSessions.get(roomId);
@@ -189,8 +174,23 @@ public class GamePlayHandler extends TextWebSocketHandler {
             }
         }
 
+        // 判断是否是房主退出房间
+        Long ownerId = roomOwnerId.get(roomId);
+        if (ownerId != null && ownerId.equals(user.getId())) {
+            Room room = roomService.getById(roomId);
+            Long newOwnerId = room.getOwnerId();
+            if (newOwnerId != null && !newOwnerId.equals(ownerId)) {
+                roomOwnerId.put(roomId, newOwnerId);
+
+                WebSocketResponseMessage ownerChangedMsg = new WebSocketResponseMessage();
+                ownerChangedMsg.setType(WebSocketMessageTypeEnum.INFO.getValue());
+                ownerChangedMsg.setMessage("房主已变更");
+                broadcastToPlayers(roomId, ownerChangedMsg);
+            }
+        }
+
         WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-        webSocketResponseMessage.setType(WebSocketMessageTypeEnum.INFO.getValue());
+        webSocketResponseMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
         String message = String.format("%s离开房间", user.getUserName());
         webSocketResponseMessage.setMessage(message);
         webSocketResponseMessage.setUser(userService.getUserVO(user));
