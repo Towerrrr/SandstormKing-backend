@@ -101,7 +101,6 @@ public class GamePlayHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        // 将消息解析为 PlayerAction
         WebSocketRequestMessage webSocketRequestMessage = JSONUtil.toBean(message.getPayload(), WebSocketRequestMessage.class);
         String type = webSocketRequestMessage.getType();
         WebSocketMessageTypeEnum webSocketMessageTypeEnum = WebSocketMessageTypeEnum.valueOf(type);
@@ -113,9 +112,11 @@ public class GamePlayHandler extends TextWebSocketHandler {
 
         // 调用对应的消息处理方法
         switch (webSocketMessageTypeEnum) {
+            case ROOM_STATE_CHANGED:
+                handleRoomStateChangedMessage(webSocketRequestMessage, session, user, roomId);
+                break;
             case START_GAME:
-                // todo 补充函数
-//                handleStartGameMessage(webSocketRequestMessage, session, user, roomId);
+                handleStartGameMessage(webSocketRequestMessage, session, user, roomId);
                 break;
             case GAME_STATE:
                 // todo 补充函数
@@ -135,6 +136,21 @@ public class GamePlayHandler extends TextWebSocketHandler {
                 webSocketResponseMessage.setUser(userService.getUserVO(user));
                 session.sendMessage(new TextMessage(JSONUtil.toJsonStr(webSocketResponseMessage)));
         }
+    }
+
+    private void handleStartGameMessage(WebSocketRequestMessage webSocketRequestMessage,
+                                        WebSocketSession session, User user, Long roomId) throws Exception {
+        WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
+        webSocketResponseMessage.setType(WebSocketMessageTypeEnum.START_GAME.getValue());
+        webSocketResponseMessage.setMessage("游戏开始");
+        broadcastToPlayers(roomId, webSocketResponseMessage);
+    }
+
+    private void handleRoomStateChangedMessage(WebSocketRequestMessage webSocketRequestMessage,
+                                               WebSocketSession session, User user, Long roomId) throws Exception {
+        WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
+        webSocketResponseMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
+        broadcastToPlayers(roomId, webSocketResponseMessage);
     }
 
     public void handlePlayerActionMessage(WebSocketRequestMessage webSocketRequestMessage,

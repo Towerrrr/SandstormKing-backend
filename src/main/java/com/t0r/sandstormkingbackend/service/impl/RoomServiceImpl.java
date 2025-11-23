@@ -47,7 +47,8 @@ public class RoomServiceImpl implements RoomService {
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
         ThrowUtils.throwIf(roomId == null || roomId <= 0, ErrorCode.PARAMS_ERROR, "房间ID无效");
 
-        boolean isOwner = loginUser.getId().equals(getById(roomId).getOwnerId());
+        Room room = getById(roomId);
+        boolean isOwner = loginUser.getId().equals(room.getOwnerId());
         ThrowUtils.throwIf(!isOwner, ErrorCode.FORBIDDEN_ERROR, "你不是房主，不能开始游戏");
 
         String playersKey = "room:" + roomId + ":members";
@@ -55,12 +56,13 @@ public class RoomServiceImpl implements RoomService {
 
         List<RoomMember> roomMembers = playerMap.values().stream()
                 .map(obj -> JSONUtil.toBean(String.valueOf(obj), RoomMember.class))
-                .peek(member -> {
-                    if (!member.getReady()) {
-                        ThrowUtils.throwIf(true, ErrorCode.PARAMS_ERROR, "房间内有玩家未准备好");
-                    }
-                })
                 .collect(Collectors.toList());
+
+        for (RoomMember member : roomMembers) {
+            if (!member.getUserId().equals(room.getOwnerId()) && !member.getReady()) {
+                ThrowUtils.throwIf(true, ErrorCode.PARAMS_ERROR, "房间内有玩家未准备好");
+            }
+        }
 
         log.info("开始游戏，房间ID：{}，房主ID：{}", roomId, loginUser.getId());
         // todo 开始游戏
