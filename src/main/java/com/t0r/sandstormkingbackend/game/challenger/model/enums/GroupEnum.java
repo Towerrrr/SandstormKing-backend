@@ -4,7 +4,7 @@ import cn.hutool.core.util.ObjUtil;
 import lombok.Getter;
 
 @Getter
-public enum RaceEnum {
+public enum GroupEnum {
 
     CITY("城市", "city", 0),
     BOT("机器人", "bot", 0),
@@ -29,7 +29,7 @@ public enum RaceEnum {
 
     private final int version;
 
-    RaceEnum(String text, String value, int version) {
+    GroupEnum(String text, String value, int version) {
         this.text = text;
         this.value = value;
         this.version = version;
@@ -41,11 +41,11 @@ public enum RaceEnum {
      * @param value 枚举值的value
      * @return 枚举值
      */
-    public static RaceEnum getEnumByValue(String value) {
+    public static GroupEnum getEnumByValue(String value) {
         if (ObjUtil.isEmpty(value)) {
             return null;
         }
-        for (RaceEnum anEnum : RaceEnum.values()) {
+        for (GroupEnum anEnum : GroupEnum.values()) {
             if (anEnum.value.equals(value)) {
                 return anEnum;
             }
