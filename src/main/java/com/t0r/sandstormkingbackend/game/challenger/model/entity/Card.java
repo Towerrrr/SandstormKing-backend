@@ -5,14 +5,19 @@ import lombok.Data;
 @Data
 public class Card {
 
-    private int id;
+    private Integer id;
 
     private String name;
 
-    private int basePower;
+    private Integer basePower;
 
-    private String race;
+    private String group;
 
+    private String level;
+
+    // todo 前端对特殊描述的渲染
     private String description;
+
+    private Integer count;
 
 }
