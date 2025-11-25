@@ -1,0 +1,65 @@
+[
+  {
+    "id": 5,
+    "name": "天才",
+    "basePower": 2,
+    "group": "city",
+    "level": "A",
+    "description": "稀有 3x",
+    "count": 3
+  },
+  {
+    "id": 6,
+    "name": "记者",
+    "basePower": 2,
+    "group": "city",
+    "level": "A",
+    "description": "查看你牌组顶的 2 张卡牌。将 1 张放置在你的牌组底，另 1 张放置在牌组顶。",
+    "count": 4
+  },
+  {
+    "id": 7,
+    "name": "角色扮演者",
+    "basePower": 4,
+    "group": "city",
+    "level": "A",
+    "description": "控制旗帜：当对手翻出等级A卡牌和新丁卡牌时失去旗帜。",
+    "count": 4
+  },
+  {
+    "id": 8,
+    "name": "狗",
+    "basePower": 3,
+    "group": "city",
+    "level": "B",
+    "description": "稀有 3x",
+    "count": 3
+  },
+  {
+    "id": 9,
+    "name": "吉祥物",
+    "basePower": 2,
+    "group": "city",
+    "level": "B",
+    "description": "你在休息区中每有一个不同的套牌图标，这张卡牌获得+1。",
+    "count": 4
+  },
+  {
+    "id": 10,
+    "name": "冠军",
+    "basePower": 4,
+    "group": "city",
+    "level": "C",
+    "description": "稀有 2x",
+    "count": 2
+  },
+  {
+    "id": 11,
+    "name": "餐车",
+    "basePower": 4,
+    "group": "city",
+    "level": "C",
+    "description": "在休息区：你基础力量值为4的卡牌在攻击时获得+2。",
+    "count": 4
+  }
+]
