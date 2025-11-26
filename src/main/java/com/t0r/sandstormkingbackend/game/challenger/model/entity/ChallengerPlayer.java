@@ -9,7 +9,7 @@ public class ChallengerPlayer {
 
     private Long userId;
 
-    private List<Integer> cardIds;
+    private List<CardInstance> cardInstances;
 
     private Integer cupCount;
 
