@@ -1,0 +1,20 @@
+[
+  {
+    "id": -1,
+    "name": "角色扮演者",
+    "basePower": 4,
+    "group": "city",
+    "level": "A",
+    "skillDescription": "控制旗帜：当对手翻出等级A卡牌和新丁卡牌时失去旗帜。",
+    "count": 4
+  },
+  {
+    "id": -2,
+    "name": "餐车",
+    "basePower": 4,
+    "group": "city",
+    "level": "C",
+    "skillDescription": "在休息区：你基础力量值为4的卡牌在攻击时获得+2。",
+    "count": 4
+  }
+]

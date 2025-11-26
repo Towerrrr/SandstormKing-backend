@@ -1,0 +1,93 @@
+[
+  {
+    "id": 22,
+    "name": "男管家",
+    "basePower": 1,
+    "group": "ghostHouse",
+    "level": "A",
+    "skillDescription": "从你的休息区中将最多 2 张卡牌放入你的消耗牌堆。",
+    "count": 4
+  },
+  {
+    "id": 23,
+    "name": "骷髅",
+    "basePower": 2,
+    "group": "ghostHouse",
+    "level": "A",
+    "skillDescription": "控制旗帜：这张卡牌获得+1。",
+    "countDescription": "普通 8x",
+    "count": 8
+  },
+  {
+    "id": 24,
+    "name": "蜘蛛",
+    "basePower": 3,
+    "group": "ghostHouse",
+    "level": "A",
+    "countDescription": "稀有 3x",
+    "count": 3
+  },
+  {
+    "id": 25,
+    "name": "幽灵",
+    "basePower": 1,
+    "group": "ghostHouse",
+    "level": "B",
+    "skillDescription": "你的对手需要将他牌组顶的那张卡牌放入他的消耗牌堆。",
+    "count": 4
+  },
+  {
+    "id": 26,
+    "name": "青年",
+    "basePower": 2,
+    "group": "ghostHouse",
+    "level": "B",
+    "skillDescription": "你在休息区每有一张 ghostHouse 卡牌，这张卡牌获得+1。",
+    "count": 4
+  },
+  {
+    "id": 27,
+    "name": "亡灵法师",
+    "basePower": 3,
+    "group": "ghostHouse",
+    "level": "B",
+    "skillDescription": "从你的休息区将一张基础力量值为 2 的卡牌放置在你的牌组顶。",
+    "count": 4
+  },
+  {
+    "id": 28,
+    "name": "蝙蝠",
+    "basePower": 5,
+    "group": "ghostHouse",
+    "level": "B",
+    "countDescription": "稀有 3x",
+    "count": 3
+  },
+  {
+    "id": 29,
+    "name": "吸血鬼",
+    "basePower": 4,
+    "group": "ghostHouse",
+    "level": "C",
+    "skillDescription": "从你的休息区中将一张等级B卡牌放回你的牌组顶。",
+    "count": 4
+  },
+  {
+    "id": 30,
+    "name": "吸尘器",
+    "basePower": 5,
+    "group": "ghostHouse",
+    "level": "C",
+    "skillDescription": "从你的休息区中将最多 2 张卡牌放入你的消耗牌堆。",
+    "count": 4
+  },
+  {
+    "id": 31,
+    "name": "狼人",
+    "basePower": 7,
+    "group": "ghostHouse",
+    "level": "C",
+    "countDescription": "稀有 2x",
+    "count": 2
+  }
+]

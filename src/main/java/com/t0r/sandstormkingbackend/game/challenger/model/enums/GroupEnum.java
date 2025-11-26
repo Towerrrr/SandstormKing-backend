@@ -10,18 +10,18 @@ public enum GroupEnum {
     BOT("机器人", "bot", 0),
     SUBMARINE("沉船", "submarine", 1),
     GHOST_HOUSE("鬼屋", "ghostHouse", 1),
-    SPACE("太空", "space", 1),
     MOVIE_THEATER("电影工作室", "movieTheater", 1),
     GARDEN("游乐园", "garden", 1),
     CASTLE("城堡", "castle", 1),
+    SPACE("太空", "space", 1),
 
     RAINBOW("彩虹", "rainbow", 2),
-    TALES_FOREST("童话森林", "talesForest", 2),
     TOY_SHOP("玩具商店", "toyShop", 2),
     BEACH_CLUB("沙滩俱乐部", "beachClub", 2),
     SECRET_BASE("秘密基地", "secretBase", 2),
     UNIVERSITY("大学", "university", 2),
-    HILL_TOP("山巅", "hillTop", 2);
+    HILL_TOP("山巅", "hillTop", 2),
+    TALES_FOREST("童话森林", "talesForest", 2);
 
     private final String text;
 

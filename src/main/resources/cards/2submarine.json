@@ -1,0 +1,101 @@
+[
+  {
+    "id": 11,
+    "name": "人鱼",
+    "basePower": 1,
+    "group": "submarine",
+    "level": "A",
+    "skillDescription": "如果你的休息区中至少有一张 submarine 卡牌，这张卡牌获得+3。",
+    "count": 4
+  },
+  {
+    "id": 12,
+    "name": "宝藏",
+    "basePower": 2,
+    "group": "submarine",
+    "level": "A",
+    "skillDescription": "控制旗帜：这张卡牌获得+2。",
+    "count": 4
+  },
+  {
+    "id": 13,
+    "name": "水手",
+    "basePower": 2,
+    "group": "submarine",
+    "level": "A",
+    "skillDescription": "查看你的牌组。从中选择任意一张卡牌并将它放置在你的牌组底。",
+    "count": 4
+  },
+  {
+    "id": 14,
+    "name": "鹦鹉",
+    "basePower": 3,
+    "group": "submarine",
+    "level": "A",
+    "countDescription": "稀有 3x",
+    "count": 3
+  },
+  {
+    "id": 15,
+    "name": "厨子",
+    "basePower": 2,
+    "group": "submarine",
+    "level": "B",
+    "skillDescription": "在休息区：你控制旗帜的卡牌获得+1。",
+    "count": 4
+  },
+  {
+    "id": 16,
+    "name": "救生员",
+    "basePower": 4,
+    "group": "submarine",
+    "level": "B",
+    "skillDescription": "如果你的牌组只剩一张或者没有卡牌，这张卡牌获得+2。",
+    "count": 4
+  },
+  {
+    "id": 17,
+    "name": "领航员",
+    "basePower": 4,
+    "group": "submarine",
+    "level": "B",
+    "skillDescription": "失去旗帜：查看你牌组顶的 2 张卡牌。将 1 张放置在你的牌组底，另 1 张放置在牌组顶。",
+    "count": 4
+  },
+  {
+    "id": 18,
+    "name": "鲨鱼",
+    "basePower": 5,
+    "group": "submarine",
+    "level": "B",
+    "countDescription": "稀有 3x",
+    "count": 3
+  },
+  {
+    "id": 19,
+    "name": "汽笛",
+    "basePower": 6,
+    "group": "submarine",
+    "level": "C",
+    "skillDescription": "你可以将对手休息区中的一张卡牌放入他的消耗牌堆。",
+    "count": 4
+  },
+  {
+    "id": 20,
+    "name": "海怪",
+    "basePower": 7,
+    "group": "submarine",
+    "level": "C",
+    "countDescription": "稀有 2x",
+    "count": 2
+  },
+  {
+    "id": 21,
+    "name": "潜水艇",
+    "basePower": 9,
+    "group": "submarine",
+    "level": "C",
+    "skillDescription": "将你牌组中最底下的那张牌放入你的消耗牌堆。",
+    "count": 4
+  }
+]

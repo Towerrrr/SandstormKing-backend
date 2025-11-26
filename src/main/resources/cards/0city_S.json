@@ -4,16 +4,14 @@
     "name": "新丁",
     "basePower": 1,
     "group": "city",
-    "level": "S",
-    "description": ""
+    "level": "S"
   },
   {
     "id": 2,
     "name": "天才",
     "basePower": 2,
     "group": "city",
-    "level": "S",
-    "description": ""
+    "level": "S"
   },
   {
     "id": 3,
@@ -21,14 +19,13 @@
     "basePower": 3,
     "group": "city",
     "level": "S",
-    "description": "查看你牌组顶的那张卡牌。将他放置在你的牌组顶或牌组底。"
+    "skillDescription": "查看你牌组顶的那张卡牌。将他放置在你的牌组顶或牌组底。"
   },
   {
     "id": 4,
     "name": "冠军",
     "basePower": 4,
     "group": "city",
-    "level": "S",
-    "description": ""
+    "level": "S"
   }
 ]

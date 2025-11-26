@@ -16,7 +16,9 @@ public class Card {
     private String level;
 
     // todo 前端对特殊描述的渲染
-    private String description;
+    private String skillDescription;
+
+    private String countDescription;
 
     private Integer count;
 
