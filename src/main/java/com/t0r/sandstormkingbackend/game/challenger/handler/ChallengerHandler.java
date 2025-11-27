@@ -2,7 +2,10 @@ package com.t0r.sandstormkingbackend.game.challenger.handler;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.json.JSONUtil;
+import com.t0r.sandstormkingbackend.exception.ErrorCode;
+import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.*;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.handler.GamePlayHandler;
 import com.t0r.sandstormkingbackend.model.entity.Room;
@@ -17,6 +20,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.t0r.sandstormkingbackend.game.challenger.constant.ChallengerConstant.MAX_PLAYER_COUNT;
 
 @Slf4j
 @Component
@@ -50,8 +55,11 @@ public class ChallengerHandler {
 
     }
 
-    public void initGame(Long roomId, String version) {
+    public void initGame(Long roomId, String version, Integer playerCount) {
         log.info("初始化游戏");
+
+        ThrowUtils.throwIf(playerCount < MAX_PLAYER_COUNT,
+                ErrorCode.PARAMS_ERROR, "最多只能加入 " + MAX_PLAYER_COUNT + " 人");
 
         ConcurrentHashMap<Long, ChallengerPlayer> challengerPlayers = new ConcurrentHashMap<>();
         Room room = roomService.getById(roomId);
@@ -73,8 +81,26 @@ public class ChallengerHandler {
         loadCardInstance(roomId);
         loadDrawSchedule(roomId, version);
         loadCupInstance(roomId);
+        loadBattlefield(roomId, playerCount);
 
     }
+
+    public void loadBattlefield(Long roomId, Integer playerCount) {
+        log.info("加载房间 {} 的战场", roomId);
+
+        int battlefieldCount = playerCount % 2 + 1;
+
+        Map<String, Map<Long, HalfBattlefield>> battlefields = roomDecksMap.get(roomId).getBattlefields();
+
+        BattlefieldEnum[] battlefieldEnums = BattlefieldEnum.values();
+        for (int i = 0; i < battlefieldCount; i++) {
+            BattlefieldEnum battlefieldEnum = battlefieldEnums[i];
+            battlefields.put(battlefieldEnum.getValue(), new ConcurrentHashMap<>());
+        }
+
+        log.info("房间 {} 的战场加载完成，共加载 {} 个战场", roomId, battlefieldCount);
+    }
+
 
     public void loadCardMap() {
         log.info("加载卡牌数据");

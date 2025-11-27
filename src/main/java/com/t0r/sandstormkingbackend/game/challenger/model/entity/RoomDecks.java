@@ -20,6 +20,9 @@ public class RoomDecks {
     private Map<String, List<CardInstance>> mainDecks = new ConcurrentHashMap<>();
     private Map<String, List<CardInstance>> discardDecks = new ConcurrentHashMap<>();
 
+    // 战场名 -> 玩家 ID -> 半场
+    private Map<String, Map<Long, HalfBattlefield>> battlefields = new ConcurrentHashMap<>();
+
     public List<CardInstance> getMainDeck(String key) {
         return mainDecks.get(key);
     }
