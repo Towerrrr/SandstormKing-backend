@@ -14,8 +14,8 @@ public class RoomDecks {
 
     private Map<String, List<CardInstance>> discardDecks = new ConcurrentHashMap<>();
 
-    // 抽卡计划
-    private Map<String, List<Option>> drawSchedules = new HashMap<>();
+    // 回合数 -> 抽卡计划
+    private Map<String, DrawSchedule> drawSchedules = new HashMap<>();
 
     public List<CardInstance> getMainDeck(String key) {
         return mainDecks.get(key);

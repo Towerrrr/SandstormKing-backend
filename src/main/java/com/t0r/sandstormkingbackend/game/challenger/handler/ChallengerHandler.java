@@ -40,38 +40,11 @@ public class ChallengerHandler {
     private final static Map<Long, Map<Long, ChallengerPlayer>> challengerPlayersMap = new ConcurrentHashMap<>();
 
     public void test() {
-        loadCardMap();
-//        for (Map.Entry<Integer, Card> entry : cardMap.entrySet()) {
-//            System.out.println(entry.getKey() + ":" + entry.getValue());
-//        }
-        initGame(37L);
-//        RoomDecks roomDecks = roomDecksMap.get(35L);
-
-//        System.out.println("\n=== 房间1牌堆信息 ===");
-//        if (roomDecks != null) {
-//            for (Map.Entry<String, List<CardInstance>> entry : roomDecks.getMainDecks().entrySet()) {
-//                System.out.println("牌堆 " + entry.getKey() + " 包含 " + entry.getValue().size() + " 张牌");
-//                // 打印前几张牌作为示例
-//                entry.getValue().stream().forEach(cardInstance ->
-//                        System.out.println("  - 实例ID: " + cardInstance.getId() +
-//                                ", 卡牌ID: " + cardInstance.getCardId() +
-//                                ", 当前力量: " + cardInstance.getCurrentPower())
-//                );
-//                if (entry.getValue().size() > 5) {
-//                    System.out.println("  ... 还有 " + (entry.getValue().size() - 5) + " 张牌");
-//                }
-//            }
-//        }
-        System.out.println("\n=== 房间1玩家信息 ===");
-        Map<Long, ChallengerPlayer> challengerPlayers = challengerPlayersMap.get(37L);
-        if (challengerPlayers != null) {
-            for (Map.Entry<Long, ChallengerPlayer> entry : challengerPlayers.entrySet()) {
-                for (CardInstance cardInstance : entry.getValue().getCardInstances()) {
-                    System.out.println("玩家 " + entry.getKey() + " 持有卡牌 " + cardInstance.getId() +
-                            "(" + cardInstance.getCardId() + ") " +
-                            " 当前力量: " + cardInstance.getCurrentPower());
-                }
-            }
+        loadCardInstance(1L);
+        loadDrawSchedule(1L, "version-2");
+        Map<String, DrawSchedule> drawSchedules = roomDecksMap.get(1L).getDrawSchedules();
+        for (Map.Entry<String, DrawSchedule> entry : drawSchedules.entrySet()) {
+            log.info("{}：{}", entry.getKey(), entry.getValue());
         }
     }
 
@@ -121,6 +94,34 @@ public class ChallengerHandler {
             log.info("卡牌加载完成，文件数：{}，总数量：{}", resources.length, totalCount);
         } catch (Exception e) {
             log.error("加载卡牌数据失败", e);
+        }
+    }
+
+    public void loadDrawSchedule(Long roomId, String version) {
+        log.info("加载房间 {} 的抽卡计划，版本：{}", roomId, version);
+
+        try {
+            // todo 后续改成用 枚举类判断
+            String fileName = "draw-schedules/" + version + ".json";
+            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+            Resource resource = resolver.getResource("classpath:" + fileName);
+            if (!resource.exists()) {
+                log.error("抽卡计划文件 {} 不存在", fileName);
+                return;
+            }
+            String jsonStr = IoUtil.readUtf8(resource.getInputStream());
+
+            // 解析为 List<DrawSchedule>
+            List<DrawSchedule> drawScheduleList = JSONUtil.toList(JSONUtil.parseArray(jsonStr), DrawSchedule.class);
+
+            Map<String, DrawSchedule> drawSchedules = roomDecksMap.get(roomId).getDrawSchedules();
+            for(DrawSchedule drawSchedule : drawScheduleList) {
+                drawSchedules.put(drawSchedule.getRound(), drawSchedule);
+            }
+
+            log.info("房间 {} 的抽卡计划（{}）加载成功，共 {} 轮", roomId, version, drawScheduleList.size());
+        } catch (Exception e) {
+            log.error("加载房间 {} 的抽卡计划失败", roomId, e);
         }
     }
 
