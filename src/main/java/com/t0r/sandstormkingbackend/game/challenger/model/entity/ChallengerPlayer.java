@@ -15,7 +15,7 @@ public class ChallengerPlayer {
 
     private List<CardInstance> cardInstances;
 
-    private Integer cupCount;
+    private List<CupInstance> cupInstances;
 
     private Integer extraFanCount;
 

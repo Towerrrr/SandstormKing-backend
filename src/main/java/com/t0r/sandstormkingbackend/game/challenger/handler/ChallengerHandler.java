@@ -14,6 +14,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -41,14 +42,15 @@ public class ChallengerHandler {
 
     public void test() {
         loadCardInstance(1L);
-        loadDrawSchedule(1L, "version-2");
-        Map<String, DrawSchedule> drawSchedules = roomDecksMap.get(1L).getDrawSchedules();
-        for (Map.Entry<String, DrawSchedule> entry : drawSchedules.entrySet()) {
-            log.info("{}：{}", entry.getKey(), entry.getValue());
+        loadCupInstance(1L);
+        Map<String, CupInstanceDeck> cupInstances = roomDecksMap.get(1L).getCupInstances();
+        for (Map.Entry<String, CupInstanceDeck> entry : cupInstances.entrySet()) {
+            log.info(String.format("%s %s", entry.getKey(), entry.getValue()));
         }
+
     }
 
-    public void initGame(Long roomId) {
+    public void initGame(Long roomId, String version) {
         log.info("初始化游戏");
 
         ConcurrentHashMap<Long, ChallengerPlayer> challengerPlayers = new ConcurrentHashMap<>();
@@ -60,7 +62,7 @@ public class ChallengerHandler {
             ChallengerPlayer challengerPlayer = new ChallengerPlayer();
             challengerPlayer.setUserId(userId);
             challengerPlayer.setCardInstances(new ArrayList<>());
-            challengerPlayer.setCupCount(0);
+            challengerPlayer.setCupInstances(new ArrayList<>());
             challengerPlayer.setExtraFanCount(0);
             challengerPlayer.setTotalFanCount(0);
 
@@ -69,6 +71,8 @@ public class ChallengerHandler {
         challengerPlayersMap.put(roomId, challengerPlayers);
 
         loadCardInstance(roomId);
+        loadDrawSchedule(roomId, version);
+        loadCupInstance(roomId);
 
     }
 
@@ -115,7 +119,7 @@ public class ChallengerHandler {
             List<DrawSchedule> drawScheduleList = JSONUtil.toList(JSONUtil.parseArray(jsonStr), DrawSchedule.class);
 
             Map<String, DrawSchedule> drawSchedules = roomDecksMap.get(roomId).getDrawSchedules();
-            for(DrawSchedule drawSchedule : drawScheduleList) {
+            for (DrawSchedule drawSchedule : drawScheduleList) {
                 drawSchedules.put(drawSchedule.getRound(), drawSchedule);
             }
 
@@ -170,6 +174,35 @@ public class ChallengerHandler {
         for (String key : roomDecks.getMainDecks().keySet()) {
             log.info("房间 {} 牌堆 {} 有 {} 张牌", roomId, key, roomDecks.getMainDeck(key).size());
         }
+    }
+
+    public void loadCupInstance(Long roomId) {
+        log.info("加载房间 {} 的奖杯实例", roomId);
+
+        try {
+            String fileName = "cup-schedule/cupInstances.json";
+            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+            Resource resource = resolver.getResource("classpath:" + fileName);
+            if (!resource.exists()) {
+                log.error("奖杯实例文件 {} 不存在", fileName);
+                return;
+            }
+            String jsonStr = IoUtil.readUtf8(resource.getInputStream());
+
+            Map<String, CupInstanceDeck> cupInstances = roomDecksMap.get(roomId).getCupInstances();
+
+            List<CupInstanceDeck> cupInstanceDeckList = JSONUtil.toList(JSONUtil.parseArray(jsonStr), CupInstanceDeck.class);
+            for (CupInstanceDeck cupInstanceDeck : cupInstanceDeckList) {
+                cupInstanceDeck.parseCupInstance();
+                cupInstances.put(cupInstanceDeck.getRound(), cupInstanceDeck);
+            }
+
+            log.info("房间 {} 的奖杯实例加载成功，共 {} 轮", roomId, cupInstanceDeckList.size());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
     }
 
 
