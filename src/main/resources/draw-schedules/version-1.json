@@ -1,0 +1,77 @@
+[
+  {
+    "round": 1,
+    "options": [
+      {
+        "drawCount": 2,
+        "level": "A"
+      }
+    ]
+  },
+  {
+    "round": 2,
+    "options": [
+      {
+        "drawCount": 2,
+        "level": "A"
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "options": [
+      {
+        "drawCount": 2,
+        "level": "A"
+      },
+      {
+        "drawCount": 1,
+        "level": "B"
+      }
+    ]
+  },
+  {
+    "round": 4,
+    "options": [
+      {
+        "drawCount": 2,
+        "level": "A"
+      },
+      {
+        "drawCount": 2,
+        "level": "B"
+      }
+    ]
+  },
+  {
+    "round": 5,
+    "options": [
+      {
+        "drawCount": 2,
+        "level": "B"
+      }
+    ]
+  },
+  {
+    "round": 6,
+    "options": [
+      {
+        "drawCount": 2,
+        "level": "B"
+      },
+      {
+        "drawCount": 1,
+        "level": "C"
+      }
+    ]
+  },
+  {
+    "round": 7,
+    "options": [
+      {
+        "drawCount": 2,
+        "level": "C"
+      }
+    ]
+  }
+]
