@@ -195,6 +195,13 @@ public class ChallengerHandler {
             }
         }
 
+        // 打乱主牌堆
+        LevelEnum[] levelEnums = LevelEnum.values();
+        for (LevelEnum levelEnum : levelEnums) {
+            List<CardInstance> mainDeck = roomDecksMap.get(roomId).getMainDeck(levelEnum.getValue());
+            Collections.shuffle(mainDeck);
+        }
+
         roomDecksMap.put(roomId, roomDecks);
 
         for (String key : roomDecks.getMainDecks().keySet()) {
@@ -220,6 +227,11 @@ public class ChallengerHandler {
             List<CupInstanceDeck> cupInstanceDeckList = JSONUtil.toList(JSONUtil.parseArray(jsonStr), CupInstanceDeck.class);
             for (CupInstanceDeck cupInstanceDeck : cupInstanceDeckList) {
                 cupInstanceDeck.parseCupInstance();
+
+                // 打乱奖杯
+                List<CupInstance> cupInstanceList = cupInstanceDeck.getCupInstanceList();
+                Collections.shuffle(cupInstanceList);
+
                 cupInstances.put(cupInstanceDeck.getRound(), cupInstanceDeck);
             }
 
