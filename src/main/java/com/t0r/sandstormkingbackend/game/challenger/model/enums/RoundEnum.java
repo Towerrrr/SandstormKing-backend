@@ -25,13 +25,15 @@ public enum RoundEnum {
         this.value = value;
     }
 
-    /**
-     * 根据 value 获取枚举
-     *
-     * @param value 枚举值的value
-     * @return 枚举值
-     */
-    public static RoundEnum getEnumByValue(String value) {
+    public RoundEnum getNextRound() {
+        int index = this.ordinal();
+        if (index >= RoundEnum.values().length - 1) {
+            return null;
+        }
+        return RoundEnum.values()[index + 1];
+    }
+
+    public static RoundEnum getByValue(String value) {
         if (ObjUtil.isEmpty(value)) {
             return null;
         }
@@ -42,4 +44,13 @@ public enum RoundEnum {
         }
         return null;
     }
+
+    public static RoundEnum getFirstRound() {
+        return RoundEnum.values()[0];
+    }
+
+    public static RoundEnum getLastRound() {
+        return RoundEnum.values()[RoundEnum.values().length - 1];
+    }
+
 }

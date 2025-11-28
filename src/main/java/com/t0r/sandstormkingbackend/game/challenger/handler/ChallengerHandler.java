@@ -1,12 +1,16 @@
 package com.t0r.sandstormkingbackend.game.challenger.handler;
 
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.json.JSONUtil;
+import com.opencsv.CSVReader;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.*;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.TotalPlayerCountEnum;
 import com.t0r.sandstormkingbackend.handler.GamePlayHandler;
 import com.t0r.sandstormkingbackend.model.entity.Room;
 import com.t0r.sandstormkingbackend.model.entity.RoomMember;
@@ -18,6 +22,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -39,11 +44,27 @@ public class ChallengerHandler {
     // 卡牌 ID -> Card
     private final static Map<Integer, Card> cardMap = new HashMap<>();
 
+    // 人数 -> 战场安排列表 ( 回合数 -> 战场 )
+    private final static Map<Integer, List<Map<String, String>>> battlefieldArrangeMap = new HashMap<>();
+
     // 房间 ID -> RoomDecks
     private final static Map<Long, RoomDecks> roomDecksMap = new ConcurrentHashMap<>();
 
     // 房间 ID -> 用户 ID -> ChallengerPlayer
     private final static Map<Long, Map<Long, ChallengerPlayer>> challengerPlayersMap = new ConcurrentHashMap<>();
+
+    public static void main(String[] args) {
+        ChallengerHandler challengerHandler = new ChallengerHandler();
+        challengerHandler.loadBattlefieldArrange();
+        List<Map<String, String>> maps = battlefieldArrangeMap.get(4);
+        for (Map<String, String> map : maps) {
+            log.info("---------------------------");
+            for(Map.Entry<String, String> entry : map.entrySet()) {
+                log.info(String.format("%s %s", entry.getKey(), entry.getValue()));
+            }
+        }
+
+    }
 
     public void test() {
         loadCardInstance(1L);
@@ -55,11 +76,20 @@ public class ChallengerHandler {
 
     }
 
+    ChallengerHandler() {
+        loadCardMap();
+        loadBattlefieldArrange();
+    }
+
     public void initGame(Long roomId, String version, Integer playerCount) {
         log.info("初始化游戏");
 
         ThrowUtils.throwIf(playerCount < MAX_PLAYER_COUNT,
                 ErrorCode.PARAMS_ERROR, "最多只能加入 " + MAX_PLAYER_COUNT + " 人");
+
+        roomDecksMap.put(roomId, new RoomDecks());
+
+        roomDecksMap.get(roomId).setCurrentRound(RoundEnum.getFirstRound().getValue());
 
         ConcurrentHashMap<Long, ChallengerPlayer> challengerPlayers = new ConcurrentHashMap<>();
         Room room = roomService.getById(roomId);
@@ -88,7 +118,7 @@ public class ChallengerHandler {
     public void loadBattlefield(Long roomId, Integer playerCount) {
         log.info("加载房间 {} 的战场", roomId);
 
-        int battlefieldCount = playerCount % 2 + 1;
+        int battlefieldCount = (playerCount + 1) % 2;
 
         Map<String, Map<Long, HalfBattlefield>> battlefields = roomDecksMap.get(roomId).getBattlefields();
 
@@ -127,6 +157,59 @@ public class ChallengerHandler {
         }
     }
 
+    public void loadBattlefieldArrange() {
+        log.info("加载战场安排");
+
+        for (TotalPlayerCountEnum totalPlayerCountEnum : TotalPlayerCountEnum.values()) {
+            String csvPath = totalPlayerCountEnum.getBattlefieldSchedulePath();
+            Integer totalPlayerCount = totalPlayerCountEnum.getValue();
+
+            if (csvPath == null || csvPath.isEmpty()) {
+                continue;
+            }
+
+            try {
+                PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+                Resource resource = resolver.getResource("classpath:" + csvPath);
+                if (!resource.exists()) {
+                    log.warn("战场安排文件 {} 不存在，跳过", csvPath);
+                    continue;
+                }
+
+                try (
+                        InputStreamReader isr = new InputStreamReader(resource.getInputStream(),
+                                java.nio.charset.StandardCharsets.UTF_8);
+                        CSVReader csvReader = new CSVReader(isr)
+                ) {
+                    List<String[]> rows = csvReader.readAll();
+
+                    if (rows.size() < 2) {
+                        log.warn("战场安排文件 {} 数据不足", csvPath);
+                        continue;
+                    }
+
+                    // 直接从第 2 行开始解析
+                    List<Map<String, String>> maps = new ArrayList<>();
+                    for (int i = 1; i <= totalPlayerCount; i++) {
+                        Map<String, String> map = new HashMap<>();
+                        // TODO 加载能否更优雅
+                        int roundIndex = 1;
+                        for(String battlefield : rows.get(i)) {
+                            map.put(Integer.toString(roundIndex++), battlefield);
+                        }
+                        maps.add(map);
+                    }
+
+                    battlefieldArrangeMap.put(totalPlayerCount, maps);
+                    log.info("{}人战场安排表加载完成", totalPlayerCount);
+                }
+
+            } catch (Exception e) {
+                log.error("加载战场安排表失败: {}", csvPath, e);
+            }
+        }
+    }
+
     public void loadDrawSchedule(Long roomId, String version) {
         log.info("加载房间 {} 的抽卡计划，版本：{}", roomId, version);
 
@@ -158,7 +241,7 @@ public class ChallengerHandler {
     public void loadCardInstance(Long roomId) {
         log.info("加载房间 {} 的卡牌实例", roomId);
 
-        RoomDecks roomDecks = new RoomDecks();
+        RoomDecks roomDecks = roomDecksMap.get(roomId);
         int localId = 1;
 
         for (LevelEnum level : LevelEnum.values()) {
@@ -202,8 +285,6 @@ public class ChallengerHandler {
             Collections.shuffle(mainDeck);
         }
 
-        roomDecksMap.put(roomId, roomDecks);
-
         for (String key : roomDecks.getMainDecks().keySet()) {
             log.info("房间 {} 牌堆 {} 有 {} 张牌", roomId, key, roomDecks.getMainDeck(key).size());
         }
@@ -238,6 +319,18 @@ public class ChallengerHandler {
             log.info("房间 {} 的奖杯实例加载成功，共 {} 轮", roomId, cupInstanceDeckList.size());
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public void nextRound(Long roomId) {
+        log.info("房间 {} 进入下一轮", roomId);
+
+        RoomDecks roomDecks = roomDecksMap.get(roomId);
+        RoundEnum currentRound = RoundEnum.getByValue(roomDecks.getCurrentRound());
+        ThrowUtils.throwIf(currentRound == RoundEnum.getLastRound(),
+                ErrorCode.PARAMS_ERROR, "已经是最后一轮了");
+        if (currentRound != null) {
+            roomDecks.setCurrentRound(Objects.requireNonNull(currentRound.getNextRound()).getValue());
         }
 
 

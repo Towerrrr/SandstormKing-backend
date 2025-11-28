@@ -1,65 +1,30 @@
 [
   {
     "round": 1,
-    "fanCount": [
-      2,
-      2,
-      2,
-      3
-    ]
+    "fanCount": [2, 2, 2, 3]
   },
   {
     "round": 2,
-    "fanCount": [
-      2,
-      2,
-      3,
-      3
-    ]
+    "fanCount": [2, 2, 3, 3]
   },
   {
     "round": 3,
-    "fanCount": [
-      3,
-      3,
-      4,
-      4
-    ]
+    "fanCount": [3, 3, 4, 4]
   },
   {
     "round": 4,
-    "fanCount": [
-      5,
-      5,
-      6,
-      6
-    ]
+    "fanCount": [5, 5, 6, 6]
   },
   {
     "round": 5,
-    "fanCount": [
-      6,
-      6,
-      6,
-      7
-    ]
+    "fanCount": [6, 6, 6, 7]
   },
   {
     "round": 6,
-    "fanCount": [
-      7,
-      7,
-      7,
-      8
-    ]
+    "fanCount": [7, 7, 7, 8]
   },
   {
     "round": 7,
-    "fanCount": [
-      9,
-      9,
-      10,
-      10
-    ]
+    "fanCount": [9, 9, 10, 10]
   }
 ]

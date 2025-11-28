@@ -2,6 +2,7 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,12 @@ public class RoomDecks {
     // 回合数 -> 抽卡计划
     private Map<String, DrawSchedule> drawSchedules = new HashMap<>();
 
+    // 用于从战场角度记录对战计划
+    // 回合数 -> 战场 -> 2 个用户 ID
+    Map<String, Map<String, List<Long>>> battlefieldSchedules = new HashMap<>();
+
+    private String currentRound;
+
     // 回合数 -> 奖杯实例
     private Map<String, CupInstanceDeck> cupInstances = new ConcurrentHashMap<>();
 
@@ -20,6 +27,7 @@ public class RoomDecks {
     private Map<String, List<CardInstance>> mainDecks = new ConcurrentHashMap<>();
     private Map<String, List<CardInstance>> discardDecks = new ConcurrentHashMap<>();
 
+    // 用于临时战斗
     // 战场名 -> 玩家 ID -> 半场
     private Map<String, Map<Long, HalfBattlefield>> battlefields = new ConcurrentHashMap<>();
 
