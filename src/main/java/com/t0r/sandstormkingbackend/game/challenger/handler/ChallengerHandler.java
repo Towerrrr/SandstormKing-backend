@@ -42,7 +42,7 @@ public class ChallengerHandler {
     private RoomService roomService;
 
     // 卡牌 ID -> Card
-    private final static Map<Integer, Card> cardMap = new HashMap<>();
+    public final static Map<Integer, Card> cardMap = new HashMap<>();
 
     // 人数 -> 战场安排列表 ( 回合数 -> 战场 )
     private final static Map<Integer, List<Map<String, String>>> battlefieldArrangeMap = new HashMap<>();
@@ -51,7 +51,7 @@ public class ChallengerHandler {
     private final static Map<Long, RoomDecks> roomDecksMap = new ConcurrentHashMap<>();
 
     // 房间 ID -> 用户 ID -> ChallengerPlayer
-    private final static Map<Long, Map<Long, ChallengerPlayer>> challengerPlayersMap = new ConcurrentHashMap<>();
+    public final static Map<Long, Map<Long, ChallengerPlayer>> challengerPlayersMap = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         ChallengerHandler challengerHandler = new ChallengerHandler();
@@ -67,8 +67,6 @@ public class ChallengerHandler {
     }
 
     public void test() {
-        loadCardInstance(1L);
-        loadCupInstance(1L);
         Map<String, CupInstanceDeck> cupInstances = roomDecksMap.get(1L).getCupInstances();
         for (Map.Entry<String, CupInstanceDeck> entry : cupInstances.entrySet()) {
             log.info(String.format("%s %s", entry.getKey(), entry.getValue()));
@@ -108,9 +106,6 @@ public class ChallengerHandler {
         }
         challengerPlayersMap.put(roomId, challengerPlayers);
 
-        loadCardInstance(roomId);
-        loadDrawSchedule(roomId, version);
-        loadCupInstance(roomId);
         loadBattlefield(roomId, playerCount);
 
     }
@@ -208,132 +203,6 @@ public class ChallengerHandler {
                 log.error("加载战场安排表失败: {}", csvPath, e);
             }
         }
-    }
-
-    public void loadDrawSchedule(Long roomId, String version) {
-        log.info("加载房间 {} 的抽卡计划，版本：{}", roomId, version);
-
-        try {
-            // todo 后续改成用 枚举类判断
-            String fileName = "draw-schedules/" + version + ".json";
-            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-            Resource resource = resolver.getResource("classpath:" + fileName);
-            if (!resource.exists()) {
-                log.error("抽卡计划文件 {} 不存在", fileName);
-                return;
-            }
-            String jsonStr = IoUtil.readUtf8(resource.getInputStream());
-
-            // 解析为 List<DrawSchedule>
-            List<DrawSchedule> drawScheduleList = JSONUtil.toList(JSONUtil.parseArray(jsonStr), DrawSchedule.class);
-
-            Map<String, DrawSchedule> drawSchedules = roomDecksMap.get(roomId).getDrawSchedules();
-            for (DrawSchedule drawSchedule : drawScheduleList) {
-                drawSchedules.put(drawSchedule.getRound(), drawSchedule);
-            }
-
-            log.info("房间 {} 的抽卡计划（{}）加载成功，共 {} 轮", roomId, version, drawScheduleList.size());
-        } catch (Exception e) {
-            log.error("加载房间 {} 的抽卡计划失败", roomId, e);
-        }
-    }
-
-    public void loadCardInstance(Long roomId) {
-        log.info("加载房间 {} 的卡牌实例", roomId);
-
-        RoomDecks roomDecks = roomDecksMap.get(roomId);
-        int localId = 1;
-
-        for (LevelEnum level : LevelEnum.values()) {
-            if (level.isKept()) {
-                roomDecks.addMainDeck(level.getValue(), new ArrayList<>()); // 主牌堆
-                roomDecks.addDiscardDeck(level.getValue(), new ArrayList<>()); // 弃牌堆
-            }
-        }
-
-        for (Card card : cardMap.values()) {
-            String cardLevel = card.getLevel();
-            LevelEnum levelEnum = LevelEnum.getEnumByValue(cardLevel);
-
-            if (levelEnum != null && levelEnum.isKept()) {
-                int count = card.getCount() != null ? card.getCount() : 1;
-                for (int i = 0; i < count; i++) {
-                    CardInstance instance = new CardInstance();
-                    instance.setId(localId++);
-                    instance.setCardId(card.getId());
-                    instance.setCurrentPower(card.getBasePower());
-                    roomDecks.getMainDeck(cardLevel).add(instance);
-                }
-            } else if (levelEnum != null) {
-                Map<Long, ChallengerPlayer> longChallengerPlayerMap = challengerPlayersMap.get(roomId);
-                for (ChallengerPlayer challengerPlayer : longChallengerPlayerMap.values()) {
-                    for (int i = 0; i < card.getCount(); i++) {
-                        CardInstance instance = new CardInstance();
-                        instance.setId(localId++);
-                        instance.setCardId(card.getId());
-                        instance.setCurrentPower(card.getBasePower());
-                        challengerPlayer.getCardInstances().add(instance);
-                    }
-                }
-            }
-        }
-
-        // 打乱主牌堆
-        LevelEnum[] levelEnums = LevelEnum.values();
-        for (LevelEnum levelEnum : levelEnums) {
-            List<CardInstance> mainDeck = roomDecksMap.get(roomId).getMainDeck(levelEnum.getValue());
-            Collections.shuffle(mainDeck);
-        }
-
-        for (String key : roomDecks.getMainDecks().keySet()) {
-            log.info("房间 {} 牌堆 {} 有 {} 张牌", roomId, key, roomDecks.getMainDeck(key).size());
-        }
-    }
-
-    public void loadCupInstance(Long roomId) {
-        log.info("加载房间 {} 的奖杯实例", roomId);
-
-        try {
-            String fileName = "cup-schedule/cupInstances.json";
-            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-            Resource resource = resolver.getResource("classpath:" + fileName);
-            if (!resource.exists()) {
-                log.error("奖杯实例文件 {} 不存在", fileName);
-                return;
-            }
-            String jsonStr = IoUtil.readUtf8(resource.getInputStream());
-
-            Map<String, CupInstanceDeck> cupInstances = roomDecksMap.get(roomId).getCupInstances();
-
-            List<CupInstanceDeck> cupInstanceDeckList = JSONUtil.toList(JSONUtil.parseArray(jsonStr), CupInstanceDeck.class);
-            for (CupInstanceDeck cupInstanceDeck : cupInstanceDeckList) {
-                cupInstanceDeck.parseCupInstance();
-
-                // 打乱奖杯
-                List<CupInstance> cupInstanceList = cupInstanceDeck.getCupInstanceList();
-                Collections.shuffle(cupInstanceList);
-
-                cupInstances.put(cupInstanceDeck.getRound(), cupInstanceDeck);
-            }
-
-            log.info("房间 {} 的奖杯实例加载成功，共 {} 轮", roomId, cupInstanceDeckList.size());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void nextRound(Long roomId) {
-        log.info("房间 {} 进入下一轮", roomId);
-
-        RoomDecks roomDecks = roomDecksMap.get(roomId);
-        RoundEnum currentRound = RoundEnum.getByValue(roomDecks.getCurrentRound());
-        ThrowUtils.throwIf(currentRound == RoundEnum.getLastRound(),
-                ErrorCode.PARAMS_ERROR, "已经是最后一轮了");
-        if (currentRound != null) {
-            roomDecks.setCurrentRound(Objects.requireNonNull(currentRound.getNextRound()).getValue());
-        }
-
-
     }
 
 
