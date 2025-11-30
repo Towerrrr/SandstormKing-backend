@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class Option {
 
+    private Integer id;
+
     private Integer drawCount;
 
     private String level;

@@ -2,6 +2,7 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.json.JSONUtil;
+import com.t0r.sandstormkingbackend.Util.MyListUtil;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
@@ -54,8 +55,8 @@ public class RoomDecks {
     private Map<String, CupInstanceDeck> cupInstances = new ConcurrentHashMap<>();
 
     // 牌堆等级 -> 卡牌实例 （主牌堆、弃牌堆）
-    private Map<String, List<CardInstance>> mainDecks = new ConcurrentHashMap<>();
-    private Map<String, List<CardInstance>> discardDecks = new ConcurrentHashMap<>();
+    private Map<String, LinkedList<CardInstance>> mainDecks = new ConcurrentHashMap<>();
+    private Map<String, LinkedList<CardInstance>> discardDecks = new ConcurrentHashMap<>();
 
     // 用于临时战斗
     // 战场名 -> 玩家 ID -> 半场
@@ -72,7 +73,7 @@ public class RoomDecks {
         Integer playerCount = roomInitRequest.getPlayerCount();
         ThrowUtils.throwIf(playerCount < MAX_PLAYER_COUNT,
                 ErrorCode.PARAMS_ERROR, "最多只能加入 " + MAX_PLAYER_COUNT + " 人");
-        if(playerCount % 2 == 0) {
+        if (playerCount % 2 == 0) {
             this.totalPlayerCount = playerCount;
             this.hasBot = false;
         } else {
@@ -110,7 +111,6 @@ public class RoomDecks {
             // 解析为 List<DrawSchedule>
             List<DrawSchedule> drawScheduleList = JSONUtil.toList(JSONUtil.parseArray(jsonStr), DrawSchedule.class);
 
-            Map<String, DrawSchedule> drawSchedules = getDrawSchedules();
             for (DrawSchedule drawSchedule : drawScheduleList) {
                 drawSchedules.put(drawSchedule.getRound(), drawSchedule);
             }
@@ -149,8 +149,8 @@ public class RoomDecks {
 
         for (LevelEnum level : LevelEnum.values()) {
             if (level.isKept()) {
-                mainDecks.put(level.getValue(), new ArrayList<>()); // 主牌堆
-                discardDecks.put(level.getValue(), new ArrayList<>()); // 弃牌堆
+                mainDecks.put(level.getValue(), new LinkedList<>()); // 主牌堆
+                discardDecks.put(level.getValue(), new LinkedList<>()); // 弃牌堆
             }
         }
 
@@ -174,7 +174,7 @@ public class RoomDecks {
                         instance.setId(localId++);
                         instance.setCardId(card.getId());
                         instance.setCurrentPower(card.getBasePower());
-                        challengerPlayer.getCardInstances().add(instance);
+                        challengerPlayer.getHandCardInstances().add(instance);
                     }
                 }
             }
@@ -241,15 +241,99 @@ public class RoomDecks {
 
     }
 
+//    region 卡牌构筑
+
+    public int SelectCardInstances(Long userId, Integer OptionId) {
+        log.info("用户 {} 选择卡牌, 选项 {}", userId, OptionId);
+
+        ChallengerPlayer currentPlayer = challengerPlayers.get(userId);
+        Option option = getOption(OptionId);
+        String level = option.getLevel();
+        Integer canDrawCount = option.getDrawCount();
+        Integer fanCount = option.getFanCount();
+
+        if (currentPlayer.isSecondSelect()) {
+            log.info("用户 {} 第二次选择卡牌", userId);
+            selectAndDiscardCardInstances(currentPlayer, null);
+            drawCardInstances(currentPlayer, level);
+            currentPlayer.setSecondSelect(false);
+        } else { // 第一次选择
+            drawCardInstances(currentPlayer, level);
+            currentPlayer.setExtraFanCount(currentPlayer.getExtraFanCount() + fanCount);
+            currentPlayer.setSecondSelect(true);
+        }
+        return canDrawCount;
+    }
+
+    public boolean confirmSelect(Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
+        log.info("用户 {} 确认选择卡牌", userId);
+        ChallengerPlayer currentPlayer = challengerPlayers.get(userId);
+        int canDrawCount = getOption(OptionId).getDrawCount();
+
+        if (selectedCardInstanceIds != null && !selectedCardInstanceIds.isEmpty()) {
+            ThrowUtils.throwIf(selectedCardInstanceIds.size() > canDrawCount,
+                    ErrorCode.PARAMS_ERROR, "选择的卡牌数不可超过" + canDrawCount);
+            selectAndDiscardCardInstances(currentPlayer, selectedCardInstanceIds);
+            currentPlayer.setSecondSelect(false);
+        }
+        return true;
+    }
+
+    /**
+     * 根据 OptionId 获取当前回合的选项
+     */
+    public Option getOption(Integer OptionId) {
+        List<Option> options = drawSchedules.get(currentRound).getOptions();
+        for (Option option : options) {
+            if (option.getId().equals(OptionId)) {
+                return option;
+            }
+        }
+        return null;
+    }
+
+    public void drawCardInstances(ChallengerPlayer currentPlayer, String level) {
+        final int DRAW_COUNT = 5;
+
+        if (mainDecks.get(level).size() < DRAW_COUNT) {
+            LinkedList<CardInstance> shuffledDiscardDeck = MyListUtil.shuffleLinkedList(discardDecks.get(level));
+            mainDecks.get(level).addAll(shuffledDiscardDeck);
+            discardDecks.get(level).clear();
+        }
+
+        for (int i = 0; i < DRAW_COUNT; i++) {
+            CardInstance cardInstance = mainDecks.get(level).removeFirst();
+            currentPlayer.getTempSelectedCardInstances().add(cardInstance);
+        }
+    }
+
+    public void selectAndDiscardCardInstances(ChallengerPlayer currentPlayer, Set<Integer> selectedCardInstanceIds) {
+        LinkedList<CardInstance> tempSelectedCardInstances = currentPlayer.getTempSelectedCardInstances();
+        for (CardInstance cardInstance : tempSelectedCardInstances) {
+            String level = cardMap.get(cardInstance.getCardId()).getLevel();
+            if (selectedCardInstanceIds.contains(cardInstance.getId())) {
+                discardDecks.get(level).add(cardInstance);
+            } else {
+                mainDecks.get(level).add(cardInstance);
+            }
+            tempSelectedCardInstances.remove(cardInstance);
+        }
+    }
+
+//    endregion
+
     public void nextRound() {
         log.info("房间 {} 进入下一轮", roomId);
 
         RoundEnum currentRound = RoundEnum.getByValue(this.currentRound);
         ThrowUtils.throwIf(currentRound == RoundEnum.getLastRound(),
                 ErrorCode.PARAMS_ERROR, "已经是最后一轮了");
-        currentRound = Objects.requireNonNull(currentRound).getNextRound();
+        this.currentRound = Objects.requireNonNull(
+                Objects.requireNonNull(currentRound).getNextRound()
+        ).getValue();
 
         resetBattlefield();
+        log.info("房间 {} 进入第 {} 轮", roomId, currentRound);
     }
 
 

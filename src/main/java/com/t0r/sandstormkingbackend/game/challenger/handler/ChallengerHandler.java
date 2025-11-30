@@ -32,6 +32,7 @@ public class ChallengerHandler {
     private RoomService roomService;
 
     // 卡牌 ID -> Card
+    // TODO 封装一个类专门处理这个数据，包括加载、根据 ID 获取
     public final static Map<Integer, Card> cardMap = new HashMap<>();
 
     // 人数 -> 战场安排列表 ( 回合数 -> 战场 )

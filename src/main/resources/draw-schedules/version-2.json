@@ -3,6 +3,7 @@
     "round": 1,
     "options": [
       {
+        "id": 1,
         "drawCount": 3,
         "level": "A"
       }
@@ -12,11 +13,13 @@
     "round": 2,
     "options": [
       {
+        "id": 1,
         "drawCount": 2,
         "level": "A",
         "fanCount": 2
       },
       {
+        "id": 2,
         "drawCount": 1,
         "level": "B"
       }
@@ -26,10 +29,12 @@
     "round": 3,
     "options": [
       {
+        "id": 1,
         "drawCount": 2,
         "level": "A"
       },
       {
+        "id": 2,
         "drawCount": 1,
         "level": "B"
       }
@@ -39,10 +44,12 @@
     "round": 4,
     "options": [
       {
+        "id": 1,
         "drawCount": 2,
         "level": "A"
       },
       {
+        "id": 2,
         "drawCount": 2,
         "level": "B"
       }
@@ -52,11 +59,13 @@
     "round": 5,
     "options": [
       {
+        "id": 1,
         "drawCount": 2,
         "level": "B",
         "fanCount": 2
       },
       {
+        "id": 2,
         "drawCount": 1,
         "level": "C"
       }
@@ -66,10 +75,12 @@
     "round": 6,
     "options": [
       {
+        "id": 1,
         "drawCount": 2,
         "level": "B"
       },
       {
+        "id": 2,
         "drawCount": 1,
         "level": "C"
       }
@@ -79,6 +90,7 @@
     "round": 7,
     "options": [
       {
+        "id": 1,
         "drawCount": 2,
         "level": "C"
       }
