@@ -45,7 +45,7 @@ public class ChallengerHandler {
     public final static Map<Integer, Card> cardMap = new HashMap<>();
 
     // 人数 -> 战场安排列表 ( 回合数 -> 战场 )
-    private final static Map<Integer, List<Map<String, String>>> battlefieldArrangeMap = new HashMap<>();
+    public final static Map<Integer, List<Map<String, String>>> battlefieldArrangeMap = new HashMap<>();
 
     // 房间 ID -> RoomDecks
     private final static Map<Long, RoomDecks> roomDecksMap = new ConcurrentHashMap<>();
@@ -105,27 +105,7 @@ public class ChallengerHandler {
             challengerPlayers.put(userId, challengerPlayer);
         }
         challengerPlayersMap.put(roomId, challengerPlayers);
-
-        loadBattlefield(roomId, playerCount);
-
     }
-
-    public void loadBattlefield(Long roomId, Integer playerCount) {
-        log.info("加载房间 {} 的战场", roomId);
-
-        int battlefieldCount = (playerCount + 1) % 2;
-
-        Map<String, Map<Long, HalfBattlefield>> battlefields = roomDecksMap.get(roomId).getBattlefields();
-
-        BattlefieldEnum[] battlefieldEnums = BattlefieldEnum.values();
-        for (int i = 0; i < battlefieldCount; i++) {
-            BattlefieldEnum battlefieldEnum = battlefieldEnums[i];
-            battlefields.put(battlefieldEnum.getValue(), new ConcurrentHashMap<>());
-        }
-
-        log.info("房间 {} 的战场加载完成，共加载 {} 个战场", roomId, battlefieldCount);
-    }
-
 
     public void loadCardMap() {
         log.info("加载卡牌数据");

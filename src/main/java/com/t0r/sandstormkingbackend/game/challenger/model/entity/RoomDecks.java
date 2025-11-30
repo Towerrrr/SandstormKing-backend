@@ -4,6 +4,8 @@ import cn.hutool.core.io.IoUtil;
 import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomConfig;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
 import lombok.Data;
@@ -15,24 +17,30 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerHandler.cardMap;
-import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerHandler.challengerPlayersMap;
+import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerHandler.*;
 
 @Data
 @Slf4j
 public class RoomDecks {
 
-    Long roomId;
+//    region 不变域
 
-    String version;
+    private Long roomId;
+
+    private String version;
+
+    private Integer totalPlayerCount;
+
+    private boolean hasBot;
 
     // 回合数 -> 抽卡计划
     private Map<String, DrawSchedule> drawSchedules = new HashMap<>();
 
-    // 用于从战场角度记录对战计划
-    // 回合数 -> 战场 -> 2 个用户 ID
-    // TODO 加载这个 Map 的逻辑
-    Map<String, Map<String, List<Long>>> battlefieldSchedules = new HashMap<>();
+    // TODO 直接解析玩家中的战场属性来分配战场
+
+//    endregion
+
+//    region 变化域
 
     private String currentRound;
 
@@ -45,69 +53,25 @@ public class RoomDecks {
 
     // 用于临时战斗
     // 战场名 -> 玩家 ID -> 半场
-    private Map<String, Map<Long, HalfBattlefield>> battlefields = new ConcurrentHashMap<>();
+    private Map<String, Map<Long, HalfBattlefield>> tempBattlefields = new ConcurrentHashMap<>();
 
-    public List<CardInstance> getMainDeck(String key) {
-        return mainDecks.get(key);
-    }
+//    endregion
 
-    public void addMainDeck(String key, List<CardInstance> deck) {
-        mainDecks.put(key, deck);
-    }
+    RoomDecks(RoomConfig roomConfig) {
+        this.roomId = roomConfig.getRoomId();
 
-    public void addDiscardDeck(String key, List<CardInstance> deck) {
-        discardDecks.put(key, deck);
-    }
-
-    public void loadCardInstance() {
-        log.info("加载房间 {} 的卡牌实例", roomId);
-
-        int localId = 1;
-
-        for (LevelEnum level : LevelEnum.values()) {
-            if (level.isKept()) {
-                addMainDeck(level.getValue(), new ArrayList<>()); // 主牌堆
-                addDiscardDeck(level.getValue(), new ArrayList<>()); // 弃牌堆
-            }
+        Integer playerCount = roomConfig.getPlayerCount();
+        if(playerCount % 2 == 0) {
+            this.totalPlayerCount = playerCount;
+            this.hasBot = false;
+        } else {
+            this.totalPlayerCount = playerCount + 1;
+            this.hasBot = true;
         }
 
-        for (Card card : cardMap.values()) {
-            String cardLevel = card.getLevel();
-            LevelEnum levelEnum = LevelEnum.getEnumByValue(cardLevel);
+        this.version = roomConfig.getVersion();
+        loadDrawSchedule();
 
-            if (levelEnum != null && levelEnum.isKept()) {
-                int count = card.getCount() != null ? card.getCount() : 1;
-                for (int i = 0; i < count; i++) {
-                    CardInstance instance = new CardInstance();
-                    instance.setId(localId++);
-                    instance.setCardId(card.getId());
-                    instance.setCurrentPower(card.getBasePower());
-                    getMainDeck(cardLevel).add(instance);
-                }
-            } else if (levelEnum != null) {
-                Map<Long, ChallengerPlayer> longChallengerPlayerMap = challengerPlayersMap.get(roomId);
-                for (ChallengerPlayer challengerPlayer : longChallengerPlayerMap.values()) {
-                    for (int i = 0; i < card.getCount(); i++) {
-                        CardInstance instance = new CardInstance();
-                        instance.setId(localId++);
-                        instance.setCardId(card.getId());
-                        instance.setCurrentPower(card.getBasePower());
-                        challengerPlayer.getCardInstances().add(instance);
-                    }
-                }
-            }
-        }
-
-        // 打乱主牌堆
-        LevelEnum[] levelEnums = LevelEnum.values();
-        for (LevelEnum levelEnum : levelEnums) {
-            List<CardInstance> mainDeck = getMainDeck(levelEnum.getValue());
-            Collections.shuffle(mainDeck);
-        }
-
-        for (String key : getMainDecks().keySet()) {
-            log.info("房间 {} 牌堆 {} 有 {} 张牌", roomId, key, getMainDeck(key).size());
-        }
     }
 
     public void loadDrawSchedule() {
@@ -138,8 +102,62 @@ public class RoomDecks {
         }
     }
 
-    public void loadCupInstance() {
-        log.info("加载房间 {} 的奖杯实例", roomId);
+    public void loadBattlefieldSchedule() {
+        log.info("加载房间 {} 的战场计划", roomId);
+
+        List<Map<String, String>> maps = battlefieldArrangeMap.get(totalPlayerCount);
+    }
+
+    public void initCardInstance() {
+        log.info("初始化房间 {} 的卡牌实例", roomId);
+
+        int localId = 1;
+
+        for (LevelEnum level : LevelEnum.values()) {
+            if (level.isKept()) {
+                mainDecks.put(level.getValue(), new ArrayList<>()); // 主牌堆
+                discardDecks.put(level.getValue(), new ArrayList<>()); // 弃牌堆
+            }
+        }
+
+        for (Card card : cardMap.values()) {
+            String cardLevel = card.getLevel();
+            LevelEnum levelEnum = LevelEnum.getEnumByValue(cardLevel);
+
+            if (levelEnum != null && levelEnum.isKept()) {
+                int count = card.getCount() != null ? card.getCount() : 1;
+                for (int i = 0; i < count; i++) {
+                    CardInstance instance = new CardInstance();
+                    instance.setId(localId++);
+                    instance.setCardId(card.getId());
+                    instance.setCurrentPower(card.getBasePower());
+                    mainDecks.get(cardLevel).add(instance);
+                }
+            } else if (levelEnum != null) {
+                Map<Long, ChallengerPlayer> longChallengerPlayerMap = challengerPlayersMap.get(roomId);
+                for (ChallengerPlayer challengerPlayer : longChallengerPlayerMap.values()) {
+                    for (int i = 0; i < card.getCount(); i++) {
+                        CardInstance instance = new CardInstance();
+                        instance.setId(localId++);
+                        instance.setCardId(card.getId());
+                        instance.setCurrentPower(card.getBasePower());
+                        challengerPlayer.getCardInstances().add(instance);
+                    }
+                }
+            }
+        }
+
+        // 打乱主牌堆
+        LevelEnum[] levelEnums = LevelEnum.values();
+        for (LevelEnum levelEnum : levelEnums) {
+            Collections.shuffle(mainDecks.get(levelEnum.getValue()));
+        }
+
+        log.info("房间 {} 的卡牌实例初始化成功，共 {} 张", roomId, localId - 1);
+    }
+
+    public void initCupInstance() {
+        log.info("初始化房间 {} 的奖杯实例", roomId);
 
         try {
             String fileName = "cup-schedule/cupInstances.json";
@@ -164,10 +182,24 @@ public class RoomDecks {
                 cupInstances.put(cupInstanceDeck.getRound(), cupInstanceDeck);
             }
 
-            log.info("房间 {} 的奖杯实例加载成功，共 {} 轮", roomId, cupInstanceDeckList.size());
+            log.info("房间 {} 的奖杯实例初始化成功，共 {} 轮", roomId, cupInstanceDeckList.size());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void initBattlefield() {
+        log.info("初始化房间 {} 的战场", roomId);
+
+        int battlefieldCount = totalPlayerCount / 2;
+
+        BattlefieldEnum[] battlefieldEnums = BattlefieldEnum.values();
+        for (int i = 0; i < battlefieldCount; i++) {
+            BattlefieldEnum battlefieldEnum = battlefieldEnums[i];
+            tempBattlefields.put(battlefieldEnum.getValue(), new ConcurrentHashMap<>());
+        }
+
+        log.info("房间 {} 的战场初始化完成，共初始化 {} 个战场", roomId, battlefieldCount);
     }
 
     public void nextRound() {
