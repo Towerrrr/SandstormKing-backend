@@ -4,7 +4,7 @@ import cn.hutool.core.io.IoUtil;
 import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
-import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomConfig;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.t0r.sandstormkingbackend.game.challenger.constant.ChallengerConstant.MAX_PLAYER_COUNT;
 import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerHandler.*;
 
 @Data
@@ -31,6 +32,8 @@ public class RoomDecks {
 
     private Integer totalPlayerCount;
 
+    private Integer battlefieldCount;
+
     private boolean hasBot;
 
     // 回合数 -> 抽卡计划
@@ -43,6 +46,9 @@ public class RoomDecks {
 //    region 变化域
 
     private String currentRound;
+
+    // 玩家 ID -> ChallengerPlayer
+    private Map<Long, ChallengerPlayer> challengerPlayers = new ConcurrentHashMap<>();
 
     // 回合数 -> 奖杯实例
     private Map<String, CupInstanceDeck> cupInstances = new ConcurrentHashMap<>();
@@ -57,10 +63,15 @@ public class RoomDecks {
 
 //    endregion
 
-    RoomDecks(RoomConfig roomConfig) {
-        this.roomId = roomConfig.getRoomId();
+    RoomDecks(RoomInitRequest roomInitRequest) {
+        log.info("初始化房间: {}, 游戏：挑战者", roomId);
 
-        Integer playerCount = roomConfig.getPlayerCount();
+        // 不变域
+        this.roomId = roomInitRequest.getRoomId();
+
+        Integer playerCount = roomInitRequest.getPlayerCount();
+        ThrowUtils.throwIf(playerCount < MAX_PLAYER_COUNT,
+                ErrorCode.PARAMS_ERROR, "最多只能加入 " + MAX_PLAYER_COUNT + " 人");
         if(playerCount % 2 == 0) {
             this.totalPlayerCount = playerCount;
             this.hasBot = false;
@@ -68,12 +79,20 @@ public class RoomDecks {
             this.totalPlayerCount = playerCount + 1;
             this.hasBot = true;
         }
+        this.battlefieldCount = totalPlayerCount / 2;
 
-        this.version = roomConfig.getVersion();
+        this.version = roomInitRequest.getVersion();
         loadDrawSchedule();
 
+        // 变化域
+        this.currentRound = RoundEnum.getFirstRound().getValue();
+        initChallengerPlayers(roomInitRequest.getUserIds());
+        initCupInstance();
+        initCardInstance();
+        resetBattlefield();
     }
 
+    // TODO 后续先全部加载到Handler再从那边取
     public void loadDrawSchedule() {
         log.info("加载房间 {} 的抽卡计划，版本：{}", roomId, version);
 
@@ -102,10 +121,25 @@ public class RoomDecks {
         }
     }
 
-    public void loadBattlefieldSchedule() {
-        log.info("加载房间 {} 的战场计划", roomId);
+//    region 初始化变化域
 
-        List<Map<String, String>> maps = battlefieldArrangeMap.get(totalPlayerCount);
+    public void initChallengerPlayers(List<Long> userIds) {
+        log.info("初始化房间 {} 的玩家信息", roomId);
+
+        // 打乱战场分配
+        List<Map<String, String>> battlefieldArrange = battlefieldArrangeMap.get(totalPlayerCount);
+        List<Map<String, String>> battlefieldArrangeCopy = new ArrayList<>(battlefieldArrange);
+        Collections.shuffle(battlefieldArrangeCopy);
+        Deque<Map<String, String>> battlefieldArrangeQueue = new ArrayDeque<>(battlefieldArrangeCopy);
+
+        for (Long userId : userIds) {
+            ChallengerPlayer challengerPlayer = new ChallengerPlayer();
+            challengerPlayer.setUserId(userId);
+            challengerPlayer.setBattlefieldSchedules(battlefieldArrangeQueue.poll());
+            // 玩家初始手牌在 initCardInstance() 中初始化
+
+            challengerPlayers.put(userId, challengerPlayer);
+        }
     }
 
     public void initCardInstance() {
@@ -134,8 +168,7 @@ public class RoomDecks {
                     mainDecks.get(cardLevel).add(instance);
                 }
             } else if (levelEnum != null) {
-                Map<Long, ChallengerPlayer> longChallengerPlayerMap = challengerPlayersMap.get(roomId);
-                for (ChallengerPlayer challengerPlayer : longChallengerPlayerMap.values()) {
+                for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
                     for (int i = 0; i < card.getCount(); i++) {
                         CardInstance instance = new CardInstance();
                         instance.setId(localId++);
@@ -188,30 +221,35 @@ public class RoomDecks {
         }
     }
 
-    public void initBattlefield() {
-        log.info("初始化房间 {} 的战场", roomId);
+//    endregion
 
-        int battlefieldCount = totalPlayerCount / 2;
+    public void resetBattlefield() {
+        log.info("重置房间 {} 的战场", roomId);
 
+        // 创建战场
         BattlefieldEnum[] battlefieldEnums = BattlefieldEnum.values();
         for (int i = 0; i < battlefieldCount; i++) {
             BattlefieldEnum battlefieldEnum = battlefieldEnums[i];
             tempBattlefields.put(battlefieldEnum.getValue(), new ConcurrentHashMap<>());
         }
 
-        log.info("房间 {} 的战场初始化完成，共初始化 {} 个战场", roomId, battlefieldCount);
+        // 玩家置入战场
+        for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
+            String playerBattlefield = challengerPlayer.getBattlefieldSchedules().get(currentRound);
+            tempBattlefields.get(playerBattlefield).put(challengerPlayer.getUserId(), new HalfBattlefield());
+        }
+
     }
 
     public void nextRound() {
         log.info("房间 {} 进入下一轮", roomId);
 
-        RoundEnum currentRound = RoundEnum.getByValue(getCurrentRound());
+        RoundEnum currentRound = RoundEnum.getByValue(this.currentRound);
         ThrowUtils.throwIf(currentRound == RoundEnum.getLastRound(),
                 ErrorCode.PARAMS_ERROR, "已经是最后一轮了");
-        if (currentRound != null) {
-            setCurrentRound(Objects.requireNonNull(currentRound.getNextRound()).getValue());
-        }
+        currentRound = Objects.requireNonNull(currentRound).getNextRound();
 
+        resetBattlefield();
     }
 
 

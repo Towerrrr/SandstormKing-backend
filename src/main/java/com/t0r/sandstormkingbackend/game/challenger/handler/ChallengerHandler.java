@@ -1,19 +1,11 @@
 package com.t0r.sandstormkingbackend.game.challenger.handler;
 
 import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.json.JSONUtil;
 import com.opencsv.CSVReader;
-import com.t0r.sandstormkingbackend.exception.ErrorCode;
-import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.*;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TotalPlayerCountEnum;
 import com.t0r.sandstormkingbackend.handler.GamePlayHandler;
-import com.t0r.sandstormkingbackend.model.entity.Room;
-import com.t0r.sandstormkingbackend.model.entity.RoomMember;
 import com.t0r.sandstormkingbackend.service.RoomService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -21,12 +13,10 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.t0r.sandstormkingbackend.game.challenger.constant.ChallengerConstant.MAX_PLAYER_COUNT;
 
 @Slf4j
 @Component
@@ -49,9 +39,6 @@ public class ChallengerHandler {
 
     // 房间 ID -> RoomDecks
     private final static Map<Long, RoomDecks> roomDecksMap = new ConcurrentHashMap<>();
-
-    // 房间 ID -> 用户 ID -> ChallengerPlayer
-    public final static Map<Long, Map<Long, ChallengerPlayer>> challengerPlayersMap = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         ChallengerHandler challengerHandler = new ChallengerHandler();
@@ -77,34 +64,6 @@ public class ChallengerHandler {
     ChallengerHandler() {
         loadCardMap();
         loadBattlefieldArrange();
-    }
-
-    public void initGame(Long roomId, String version, Integer playerCount) {
-        log.info("初始化游戏");
-
-        ThrowUtils.throwIf(playerCount < MAX_PLAYER_COUNT,
-                ErrorCode.PARAMS_ERROR, "最多只能加入 " + MAX_PLAYER_COUNT + " 人");
-
-        roomDecksMap.put(roomId, new RoomDecks());
-
-        roomDecksMap.get(roomId).setCurrentRound(RoundEnum.getFirstRound().getValue());
-
-        ConcurrentHashMap<Long, ChallengerPlayer> challengerPlayers = new ConcurrentHashMap<>();
-        Room room = roomService.getById(roomId);
-        List<RoomMember> roomMembers = room.getRoomMembers();
-        for (RoomMember member : roomMembers) {
-            Long userId = member.getUserId();
-
-            ChallengerPlayer challengerPlayer = new ChallengerPlayer();
-            challengerPlayer.setUserId(userId);
-            challengerPlayer.setCardInstances(new ArrayList<>());
-            challengerPlayer.setCupInstances(new ArrayList<>());
-            challengerPlayer.setExtraFanCount(0);
-            challengerPlayer.setTotalFanCount(0);
-
-            challengerPlayers.put(userId, challengerPlayer);
-        }
-        challengerPlayersMap.put(roomId, challengerPlayers);
     }
 
     public void loadCardMap() {
