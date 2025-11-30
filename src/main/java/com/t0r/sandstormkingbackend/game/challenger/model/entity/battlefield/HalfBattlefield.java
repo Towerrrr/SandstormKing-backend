@@ -1,5 +1,6 @@
-package com.t0r.sandstormkingbackend.game.challenger.model.entity;
+package com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield;
 
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import lombok.Data;
 
 import java.util.ArrayList;

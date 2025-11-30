@@ -6,6 +6,8 @@ import com.t0r.sandstormkingbackend.Util.MyListUtil;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.HalfBattlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
@@ -17,6 +19,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static com.t0r.sandstormkingbackend.game.challenger.constant.ChallengerConstant.MAX_PLAYER_COUNT;
 import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerHandler.*;
@@ -59,8 +62,8 @@ public class RoomDecks {
     private Map<String, LinkedList<CardInstance>> discardDecks = new ConcurrentHashMap<>();
 
     // 用于临时战斗
-    // 战场名 -> 玩家 ID -> 半场
-    private Map<String, Map<Long, HalfBattlefield>> tempBattlefields = new ConcurrentHashMap<>();
+    // 战场名 -> 战场
+    private Map<String, Battlefield> tempBattlefields = new ConcurrentHashMap<>();
 
 //    endregion
 
@@ -230,18 +233,15 @@ public class RoomDecks {
         BattlefieldEnum[] battlefieldEnums = BattlefieldEnum.values();
         for (int i = 0; i < battlefieldCount; i++) {
             BattlefieldEnum battlefieldEnum = battlefieldEnums[i];
-            tempBattlefields.put(battlefieldEnum.getValue(), new ConcurrentHashMap<>());
-        }
-
-        // 玩家置入战场
-        for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
-            String playerBattlefield = challengerPlayer.getBattlefieldSchedules().get(currentRound);
-            tempBattlefields.get(playerBattlefield).put(challengerPlayer.getUserId(), new HalfBattlefield());
+            tempBattlefields.put(battlefieldEnum.getValue(),
+                    new Battlefield()
+                            .setName(battlefieldEnum.getValue())
+                            .setPlayerToBattlefield(currentRound, challengerPlayers));
         }
 
     }
 
-//    region 卡牌构筑
+//    region 构筑阶段
 
     public int SelectCardInstances(Long userId, Integer OptionId) {
         log.info("用户 {} 选择卡牌, 选项 {}", userId, OptionId);
