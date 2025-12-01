@@ -7,17 +7,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class WebSocketRequestMessage {
+public class WSMessage {
 
-    /**
-     * 消息类型
-     */
     private String type;
 
-    /**
-     * 消息体
-     * todo 后续不一定这么设计
-     */
-    private String data;
+    private String description;
+
+    private GameMessage gameMessage;
+
 }
 

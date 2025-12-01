@@ -6,8 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.sun.istack.internal.NotNull;
-import com.t0r.sandstormkingbackend.model.dto.game.WebSocketRequestMessage;
-import com.t0r.sandstormkingbackend.model.dto.game.WebSocketResponseMessage;
+import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
 import com.t0r.sandstormkingbackend.model.entity.Room;
 import com.t0r.sandstormkingbackend.model.entity.User;
 import com.t0r.sandstormkingbackend.model.enums.PlayerActionEnum;
@@ -42,7 +41,7 @@ public class GamePlayHandler extends TextWebSocketHandler {
     private final Map<Long, Set<WebSocketSession>> playerSessions = new ConcurrentHashMap<>();
 
     private void broadcastToPlayers(Long roomId,
-                                    WebSocketResponseMessage webSocketResponseMessage,
+                                    WSMessage wsMessage,
                                     WebSocketSession excludeSession) throws Exception {
         Set<WebSocketSession> sessionSet = playerSessions.get(roomId);
         if (CollUtil.isNotEmpty(sessionSet)) {
@@ -54,7 +53,7 @@ public class GamePlayHandler extends TextWebSocketHandler {
             module.addSerializer(Long.TYPE, ToStringSerializer.instance); // 支持 long 基本类型
             objectMapper.registerModule(module);
             // 序列化为 JSON 字符串
-            String message = objectMapper.writeValueAsString(webSocketResponseMessage);
+            String message = objectMapper.writeValueAsString(wsMessage);
             TextMessage textMessage = new TextMessage(message);
             for (WebSocketSession session : sessionSet) {
                 // 排除掉的 session 不发送
@@ -69,9 +68,8 @@ public class GamePlayHandler extends TextWebSocketHandler {
     }
 
     // 全部广播
-    private void broadcastToPlayers(Long roomId,
-                                    WebSocketResponseMessage webSocketResponseMessage) throws Exception {
-        this.broadcastToPlayers(roomId, webSocketResponseMessage, null);
+    private void broadcastToPlayers(Long roomId, WSMessage wsMessage) throws Exception {
+        this.broadcastToPlayers(roomId, wsMessage, null);
     }
 
     @Override
@@ -87,22 +85,21 @@ public class GamePlayHandler extends TextWebSocketHandler {
             playerSessions.putIfAbsent(roomId, ConcurrentHashMap.newKeySet());
         } else { // 加入房间
             // 构造响应
-            WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-            webSocketResponseMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
+            WSMessage wsMessage = new WSMessage();
+            wsMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
             String message = String.format("%s加入房间", user.getUserName());
-            webSocketResponseMessage.setMessage(message);
-            webSocketResponseMessage.setUser(userService.getUserVO(user));
+            wsMessage.setDescription(message);
 
             // 广播给同一房间的玩家
-            broadcastToPlayers(roomId, webSocketResponseMessage);
+            broadcastToPlayers(roomId, wsMessage);
         }
         playerSessions.get(roomId).add(session);
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        WebSocketRequestMessage webSocketRequestMessage = JSONUtil.toBean(message.getPayload(), WebSocketRequestMessage.class);
-        String type = webSocketRequestMessage.getType();
+        WSMessage wsMessage = JSONUtil.toBean(message.getPayload(), WSMessage.class);
+        String type = wsMessage.getType();
         WebSocketMessageTypeEnum webSocketMessageTypeEnum = WebSocketMessageTypeEnum.valueOf(type);
 
         // 从 Session 属性中获取公共参数
@@ -113,65 +110,34 @@ public class GamePlayHandler extends TextWebSocketHandler {
         // 调用对应的消息处理方法
         switch (webSocketMessageTypeEnum) {
             case ROOM_STATE_CHANGED:
-                handleRoomStateChangedMessage(webSocketRequestMessage, session, user, roomId);
+                handleRoomStateChangedMessage(wsMessage, session, user, roomId);
                 break;
             case START_GAME:
-                handleStartGameMessage(webSocketRequestMessage, session, user, roomId);
-                break;
-            case GAME_STATE:
-                // todo 补充函数
-//                handleGameStateMessage(webSocketRequestMessage, session, user, roomId);
+                handleStartGameMessage(wsMessage, session, user, roomId);
                 break;
             case GAME_OVER:
                 // todo 补充函数
-//                handleGameOverMessage(webSocketRequestMessage, session, user, roomId);
-                break;
-            case PLAYER_ACTION:
-                handlePlayerActionMessage(webSocketRequestMessage, session, user, roomId);
+//                handleGameOverMessage(wsMessage, session, user, roomId);
                 break;
             default:
-                WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-                webSocketResponseMessage.setType(WebSocketMessageTypeEnum.ERROR.getValue());
-                webSocketResponseMessage.setMessage("消息类型错误");
-                webSocketResponseMessage.setUser(userService.getUserVO(user));
-                session.sendMessage(new TextMessage(JSONUtil.toJsonStr(webSocketResponseMessage)));
+                wsMessage.setType(WebSocketMessageTypeEnum.ERROR.getValue());
+                wsMessage.setDescription("消息类型错误");
+                session.sendMessage(new TextMessage(JSONUtil.toJsonStr(wsMessage)));
         }
     }
 
-    private void handleStartGameMessage(WebSocketRequestMessage webSocketRequestMessage,
+    private void handleStartGameMessage(WSMessage wsMessage,
                                         WebSocketSession session, User user, Long roomId) throws Exception {
-        WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-        webSocketResponseMessage.setType(WebSocketMessageTypeEnum.START_GAME.getValue());
-        webSocketResponseMessage.setMessage("游戏开始");
-        broadcastToPlayers(roomId, webSocketResponseMessage);
+        wsMessage.setType(WebSocketMessageTypeEnum.START_GAME.getValue());
+        wsMessage.setDescription("游戏开始");
+        broadcastToPlayers(roomId, wsMessage);
     }
 
-    private void handleRoomStateChangedMessage(WebSocketRequestMessage webSocketRequestMessage,
+    private void handleRoomStateChangedMessage(WSMessage wsMessage,
                                                WebSocketSession session, User user, Long roomId) throws Exception {
-        WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-        webSocketResponseMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
-        broadcastToPlayers(roomId, webSocketResponseMessage);
-    }
-
-    public void handlePlayerActionMessage(WebSocketRequestMessage webSocketRequestMessage,
-                                          WebSocketSession session,
-                                          User user, Long pictureId) throws Exception {
-        // todo 这里的 data 还要处理
-        String data = webSocketRequestMessage.getData();
-        PlayerActionEnum actionEnum = PlayerActionEnum.getEnumByValue(data);
-        if (actionEnum == null) {
-            return;
-        }
-
-        WebSocketResponseMessage pictureEditResponseMessage = new WebSocketResponseMessage();
-        pictureEditResponseMessage.setType(WebSocketMessageTypeEnum.PLAYER_ACTION.getValue());
-        String message = String.format("%s执行%s", user.getUserName(), actionEnum.getText());
-        pictureEditResponseMessage.setMessage(message);
-        // todo 也要处理
-        pictureEditResponseMessage.setPlayerAction(data);
-        pictureEditResponseMessage.setUser(userService.getUserVO(user));
-        // 广播给除了当前客户端之外的其他用户，否则会造成重复操作
-        broadcastToPlayers(pictureId, pictureEditResponseMessage, session);
+        wsMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
+        wsMessage.setDescription("房间状态变更");
+        broadcastToPlayers(roomId, wsMessage);
     }
 
     @Override
@@ -198,19 +164,18 @@ public class GamePlayHandler extends TextWebSocketHandler {
             if (newOwnerId != null && !newOwnerId.equals(ownerId)) {
                 roomOwnerId.put(roomId, newOwnerId);
 
-                WebSocketResponseMessage ownerChangedMsg = new WebSocketResponseMessage();
+                WSMessage ownerChangedMsg = new WSMessage();
                 ownerChangedMsg.setType(WebSocketMessageTypeEnum.INFO.getValue());
-                ownerChangedMsg.setMessage("房主已变更");
+                ownerChangedMsg.setDescription("房主已变更");
                 broadcastToPlayers(roomId, ownerChangedMsg);
             }
         }
 
-        WebSocketResponseMessage webSocketResponseMessage = new WebSocketResponseMessage();
-        webSocketResponseMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
+        WSMessage wsMessage = new WSMessage();
+        wsMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
         String message = String.format("%s离开房间", user.getUserName());
-        webSocketResponseMessage.setMessage(message);
-        webSocketResponseMessage.setUser(userService.getUserVO(user));
-        broadcastToPlayers(roomId, webSocketResponseMessage);
+        wsMessage.setDescription(message);
+        broadcastToPlayers(roomId, wsMessage);
     }
 
 
