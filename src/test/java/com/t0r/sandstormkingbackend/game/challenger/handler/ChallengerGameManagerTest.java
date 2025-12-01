@@ -5,17 +5,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @SpringBootTest
-class ChallengerHandlerTest {
+class ChallengerGameManagerTest {
 
     @Resource
-    private ChallengerHandler challengerHandler;
+    private ChallengerGameManager challengerGameManager;
 
     @Test
     void test() {
-        challengerHandler.test();
+//        challengerGameManager.test();
     }
 
 }

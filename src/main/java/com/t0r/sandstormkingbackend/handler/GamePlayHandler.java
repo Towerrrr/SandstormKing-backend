@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.sun.istack.internal.NotNull;
+import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerWSHandler;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
 import com.t0r.sandstormkingbackend.model.entity.Room;
 import com.t0r.sandstormkingbackend.model.entity.User;
-import com.t0r.sandstormkingbackend.model.enums.PlayerActionEnum;
 import com.t0r.sandstormkingbackend.model.enums.WebSocketMessageTypeEnum;
 import com.t0r.sandstormkingbackend.service.RoomService;
 import com.t0r.sandstormkingbackend.service.UserService;
@@ -34,6 +34,9 @@ public class GamePlayHandler extends TextWebSocketHandler {
 
     @Resource
     private RoomService roomService;
+
+    @Resource
+    private ChallengerWSHandler challengerWSHandler;
 
     private final Map<Long, Long> roomOwnerId = new ConcurrentHashMap<>();
 
@@ -67,7 +70,9 @@ public class GamePlayHandler extends TextWebSocketHandler {
         }
     }
 
-    // 全部广播
+    /**
+     * 全部广播
+     */
     private void broadcastToPlayers(Long roomId, WSMessage wsMessage) throws Exception {
         this.broadcastToPlayers(roomId, wsMessage, null);
     }
@@ -112,25 +117,16 @@ public class GamePlayHandler extends TextWebSocketHandler {
             case ROOM_STATE_CHANGED:
                 handleRoomStateChangedMessage(wsMessage, session, user, roomId);
                 break;
-            case START_GAME:
-                handleStartGameMessage(wsMessage, session, user, roomId);
-                break;
-            case GAME_OVER:
-                // todo 补充函数
-//                handleGameOverMessage(wsMessage, session, user, roomId);
+            case CHALLENGER:
+                challengerWSHandler.handleMessage(wsMessage.getGameMessage(), session, user, roomId);
+                // TODO 测试一下这样消息能否修改
+                broadcastToPlayers(roomId, wsMessage);
                 break;
             default:
                 wsMessage.setType(WebSocketMessageTypeEnum.ERROR.getValue());
                 wsMessage.setDescription("消息类型错误");
                 session.sendMessage(new TextMessage(JSONUtil.toJsonStr(wsMessage)));
         }
-    }
-
-    private void handleStartGameMessage(WSMessage wsMessage,
-                                        WebSocketSession session, User user, Long roomId) throws Exception {
-        wsMessage.setType(WebSocketMessageTypeEnum.START_GAME.getValue());
-        wsMessage.setDescription("游戏开始");
-        broadcastToPlayers(roomId, wsMessage);
     }
 
     private void handleRoomStateChangedMessage(WSMessage wsMessage,

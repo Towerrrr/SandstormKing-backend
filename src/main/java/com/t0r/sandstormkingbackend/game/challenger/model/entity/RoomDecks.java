@@ -7,7 +7,6 @@ import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.HalfBattlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
@@ -19,10 +18,9 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static com.t0r.sandstormkingbackend.game.challenger.constant.ChallengerConstant.MAX_PLAYER_COUNT;
-import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerHandler.*;
+import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager.*;
 
 @Data
 @Slf4j
@@ -67,7 +65,7 @@ public class RoomDecks {
 
 //    endregion
 
-    RoomDecks(RoomInitRequest roomInitRequest) {
+    public RoomDecks(RoomInitRequest roomInitRequest) {
         log.info("初始化房间: {}, 游戏：挑战者", roomId);
 
         // 不变域

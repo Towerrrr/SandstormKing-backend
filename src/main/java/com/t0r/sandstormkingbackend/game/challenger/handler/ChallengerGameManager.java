@@ -3,6 +3,7 @@ package com.t0r.sandstormkingbackend.game.challenger.handler;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.json.JSONUtil;
 import com.opencsv.CSVReader;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.*;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TotalPlayerCountEnum;
 import com.t0r.sandstormkingbackend.handler.GamePlayHandler;
@@ -20,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
-public class ChallengerHandler {
+public class ChallengerGameManager {
 
     @javax.annotation.Resource
     private RedisTemplate<String, Object> redisTemplate;
@@ -41,30 +42,14 @@ public class ChallengerHandler {
     // 房间 ID -> RoomDecks
     private final static Map<Long, RoomDecks> roomDecksMap = new ConcurrentHashMap<>();
 
-    public static void main(String[] args) {
-        ChallengerHandler challengerHandler = new ChallengerHandler();
-        challengerHandler.loadBattlefieldArrange();
-        List<Map<String, String>> maps = battlefieldArrangeMap.get(4);
-        for (Map<String, String> map : maps) {
-            log.info("---------------------------");
-            for(Map.Entry<String, String> entry : map.entrySet()) {
-                log.info(String.format("%s %s", entry.getKey(), entry.getValue()));
-            }
-        }
-
-    }
-
-    public void test() {
-        Map<String, CupInstanceDeck> cupInstances = roomDecksMap.get(1L).getCupInstances();
-        for (Map.Entry<String, CupInstanceDeck> entry : cupInstances.entrySet()) {
-            log.info(String.format("%s %s", entry.getKey(), entry.getValue()));
-        }
-
-    }
-
-    ChallengerHandler() {
+    ChallengerGameManager() {
         loadCardMap();
         loadBattlefieldArrange();
+    }
+
+    public void startGame(RoomInitRequest roomInitRequest) {
+        Long roomId = roomInitRequest.getRoomId();
+        roomDecksMap.put(roomId, new RoomDecks(roomInitRequest));
     }
 
     public void loadCardMap() {

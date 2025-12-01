@@ -9,9 +9,8 @@ public enum WebSocketMessageTypeEnum {
     ERROR("发送错误", "ERROR"),
     ROOM_STATE_CHANGED("房间状态变更", "ROOM_STATE_CHANGED"),
     START_GAME("开始游戏", "START_GAME"),
-    GAME_STATE("游戏状态更新", "GAME_STATE"),
     GAME_OVER("游戏结束", "GAME_OVER"),
-    PLAYER_ACTION("玩家操作", "PLAYER_ACTION");
+    CHALLENGER("挑战者", "CHALLENGER");
 
     private final String text;
     private final String value;
