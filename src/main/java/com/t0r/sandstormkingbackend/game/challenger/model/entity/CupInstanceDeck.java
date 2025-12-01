@@ -2,6 +2,7 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
 import lombok.Data;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,12 +14,12 @@ public class CupInstanceDeck {
     // 用于 JSON 加载
     private List<Integer> fanCount;
 
-    private List<CupInstance> cupInstanceList;
+    private LinkedList<CupInstance> cupInstanceList;
 
     public void parseCupInstance() {
         cupInstanceList = fanCount.stream()
                 .map(fanCount -> new CupInstance(round, fanCount))
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(LinkedList::new));
     }
 
 }

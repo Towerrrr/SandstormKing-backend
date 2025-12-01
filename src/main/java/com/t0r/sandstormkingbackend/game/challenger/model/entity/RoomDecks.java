@@ -320,6 +320,16 @@ public class RoomDecks {
 
 //    endregion
 
+    public void award() {
+        log.info("房间 {} 当前回合 {} 颁奖", roomId, currentRound);
+
+        LinkedList<CupInstance> cupInstanceList = cupInstances.get(currentRound).getCupInstanceList();
+        for (Battlefield battlefield : tempBattlefields.values()) {
+            Long winnerId = battlefield.getWinnerId();
+            challengerPlayers.get(winnerId).getCupInstances().add(cupInstanceList.removeFirst());
+        }
+    }
+
     public void nextRound() {
         log.info("房间 {} 进入下一轮", roomId);
 
