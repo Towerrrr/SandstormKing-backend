@@ -234,9 +234,7 @@ public class RoomDecks {
         for (int i = 0; i < battlefieldCount; i++) {
             BattlefieldEnum battlefieldEnum = battlefieldEnums[i];
             tempBattlefields.put(battlefieldEnum.getValue(),
-                    new Battlefield()
-                            .setName(battlefieldEnum.getValue())
-                            .setPlayerToBattlefield(currentRound, challengerPlayers));
+                    new Battlefield(battlefieldEnum.getValue(), currentRound, challengerPlayers));
         }
 
     }

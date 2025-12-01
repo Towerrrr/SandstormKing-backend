@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.HalfBattlefield.MAX_REST_ZONE_SIZE;
+
 @Data
 @Slf4j
 @Accessors(chain = true)
@@ -20,21 +22,25 @@ public class Battlefield {
 
     Map<Long, HalfBattlefield> halfBattlefieldMap;
 
-    List<Battle> battleList;
+    Long startPlayerId;
+    Long elsePlayerId;
 
-    public Battlefield setPlayerToBattlefield(String currentRound, Map<Long, ChallengerPlayer> challengerPlayers) {
+    LinkedList<Battle> battleList;
+
+    Long winnerId;
+
+    public Battlefield(String name, String currentRound, Map<Long, ChallengerPlayer> challengerPlayers) {
+        this.name = name;
         for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
             String playerBattlefield = challengerPlayer.getBattlefieldSchedules().get(currentRound);
             halfBattlefieldMap.put(challengerPlayer.getUserId(), new HalfBattlefield());
         }
-        return this; // 链式调用
     }
 
     /**
      * @param challengerPlayers 玩家 ID -> ChallengerPlayer
-     * @return 先开始出牌的玩家 ID
      */
-    public Long startBattle(Map<Long, ChallengerPlayer> challengerPlayers) {
+    public void startBattle(Map<Long, ChallengerPlayer> challengerPlayers) {
         log.info("开始战斗，战场 {}", name);
 
         for (Map.Entry<Long, HalfBattlefield> entry : halfBattlefieldMap.entrySet()) {
@@ -47,14 +53,13 @@ public class Battlefield {
             halfBattlefield.getHandZone().addAll(ShuffledHandCardInstances); // 手牌的副本
         }
 
-        return decideStartPlayer(challengerPlayers);
+        decideStartPlayer(challengerPlayers);
     }
 
     /**
      * @param challengerPlayers 玩家 ID -> ChallengerPlayer
-     * @return 先开始出牌的玩家 ID
      */
-    public Long decideStartPlayer(Map<Long, ChallengerPlayer> challengerPlayers) {
+    public void decideStartPlayer(Map<Long, ChallengerPlayer> challengerPlayers) {
         log.info("决定先开始出牌的玩家，战场 {}", name);
 
         // 用户 ID -> 拥有奖杯的回合数的和
@@ -83,10 +88,83 @@ public class Battlefield {
         if (first.getValue().equals(second.getValue())) {
             // TODO 随机选择时告知前端
             log.info("两个玩家的奖杯回合数相同，随机选择一个玩家");
-            return Math.random() < 0.5 ? first.getKey() : second.getKey();
+            if (Math.random() < 0.5) {
+                startPlayerId = first.getKey();
+                elsePlayerId = second.getKey();
+            } else {
+                startPlayerId = second.getKey();
+                elsePlayerId = first.getKey();
+            }
         } else {
-            return first.getKey();
+            startPlayerId = first.getKey();
+            elsePlayerId = second.getKey();
         }
+    }
+
+    public void calculateBattle() {
+        HalfBattlefield[] halfBattlefields = new HalfBattlefield[] {
+                halfBattlefieldMap.get(startPlayerId),
+                halfBattlefieldMap.get(elsePlayerId)
+        };
+        // 0: 当前防守方, 1: 当前进攻方
+        LinkedList<CardInstance>[] handZones = new LinkedList[] {
+                halfBattlefields[0].getHandZone(),
+                halfBattlefields[1].getHandZone()
+        };
+
+        int defenderIdx = 0;
+        int attackerIdx = 1;
+
+        while (!handZones[defenderIdx].isEmpty() && !handZones[attackerIdx].isEmpty()) {
+            Integer defenderPower = 0;
+            Integer attackerPower = 0;
+
+            Battle battle = new Battle();
+            // 防守方出牌
+            CardInstance defenderCard = handZones[defenderIdx].removeFirst();
+            battle.setDefender(defenderCard);
+            defenderPower = defenderCard.getCurrentPower();
+
+            // 进攻方出牌，直到攻击力 >= 防守力 或手牌用完
+            while (attackerPower < defenderPower && !handZones[attackerIdx].isEmpty()) {
+                CardInstance attackerCard = handZones[attackerIdx].removeFirst();
+                attackerPower += attackerCard.getCurrentPower();
+                battle.getAttacker().add(attackerCard);
+            }
+            // 将上一轮所有进攻牌放入休息区
+            LinkedList<CardInstance> attacker = battleList.getLast().getAttacker();
+            for (CardInstance cardInstance : attacker) {
+                Map<Integer, List<CardInstance>> restZone = halfBattlefields[defenderIdx].getRestZone();
+                restZone.putIfAbsent(cardInstance.getCardId(), new ArrayList<>());
+                restZone.get(cardInstance.getCardId()).add(cardInstance);
+                if (restZone.size() > MAX_REST_ZONE_SIZE) {
+                    winnerId = attackerIdx == 0 ? startPlayerId : elsePlayerId;
+                    battleList.add(battle);
+                    log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
+                    return;
+                }
+            }
+
+            battleList.add(battle);
+
+            // 交换攻守（下回合由上一轮进攻方最后一张牌做防守方）
+            if (!battle.getAttacker().isEmpty()) {
+                // TODO 后续加入技能可能要改，这里将上一轮进攻的最后一张牌放回手牌
+                CardInstance lastAttacker = battle.getAttacker().getLast();
+                handZones[defenderIdx].addFirst(lastAttacker); // 加回防守方手牌最前面
+            }
+
+            int temp = defenderIdx;
+            defenderIdx = attackerIdx;
+            attackerIdx = temp;
+        }
+
+        if (handZones[0].isEmpty()) {
+            winnerId = startPlayerId;
+        } else {
+            winnerId = elsePlayerId;
+        }
+        log.info("战斗结束，进攻方无多余手牌，胜利者为 {}", winnerId);
     }
 
 

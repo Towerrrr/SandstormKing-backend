@@ -10,6 +10,6 @@ public class Battle {
 
     private CardInstance defender;
 
-    private LinkedList<CardInstance> attacker;
+    private LinkedList<CardInstance> attacker = new LinkedList<>();
 
 }
