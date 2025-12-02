@@ -6,7 +6,6 @@ import com.opencsv.CSVReader;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.*;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TotalPlayerCountEnum;
-import com.t0r.sandstormkingbackend.handler.GamePlayHandler;
 import com.t0r.sandstormkingbackend.service.RoomService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -25,9 +24,6 @@ public class ChallengerGameManager {
 
     @javax.annotation.Resource
     private RedisTemplate<String, Object> redisTemplate;
-
-    @javax.annotation.Resource
-    private GamePlayHandler gamePlayHandler;
 
     @javax.annotation.Resource
     private RoomService roomService;

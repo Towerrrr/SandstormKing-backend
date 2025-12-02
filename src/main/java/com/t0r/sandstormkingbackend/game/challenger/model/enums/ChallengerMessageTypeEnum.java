@@ -4,9 +4,9 @@ import cn.hutool.core.util.ObjUtil;
 import lombok.Getter;
 
 @Getter
-public enum GameMessageTypeEnum {
+public enum ChallengerMessageTypeEnum {
 
-    START_GAME("开始游戏", "start_game"),
+    INIT_GAME("初始化游戏", "init_game"),
     END_GAME("结束游戏", "end_game"),
     REFRESH("刷新", "refresh"),
     DRAW_CARD("抽牌", "draw_card"),
@@ -18,16 +18,16 @@ public enum GameMessageTypeEnum {
 
     private final String value;
 
-    GameMessageTypeEnum(String text, String value) {
+    ChallengerMessageTypeEnum(String text, String value) {
         this.text = text;
         this.value = value;
     }
 
-    public static GameMessageTypeEnum getByValue(String value) {
+    public static ChallengerMessageTypeEnum getByValue(String value) {
         if (ObjUtil.isEmpty(value)) {
             return null;
         }
-        for (GameMessageTypeEnum anEnum : GameMessageTypeEnum.values()) {
+        for (ChallengerMessageTypeEnum anEnum : ChallengerMessageTypeEnum.values()) {
             if (anEnum.value.equals(value)) {
                 return anEnum;
             }

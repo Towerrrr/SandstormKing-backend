@@ -4,7 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.ConfirmChoiceRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.GameMessageTypeEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
 import com.t0r.sandstormkingbackend.model.entity.User;
@@ -26,9 +26,9 @@ public class ChallengerWSHandler {
     public MessageBroadcastTypeEnum handleMessage(GameMessage gameMessage, WebSocketSession session,
                                                   User user, Long roomId) throws Exception {
         String type = gameMessage.getType();
-        GameMessageTypeEnum gameMessageTypeEnum = GameMessageTypeEnum.valueOf(type);
-        switch (gameMessageTypeEnum) {
-            case START_GAME:
+        ChallengerMessageTypeEnum challengerMessageTypeEnum = ChallengerMessageTypeEnum.valueOf(type);
+        switch (challengerMessageTypeEnum) {
+            case INIT_GAME:
                 return handleStartGameMessage(gameMessage);
             case DRAW_CARD:
             case DRAW_AGAIN:

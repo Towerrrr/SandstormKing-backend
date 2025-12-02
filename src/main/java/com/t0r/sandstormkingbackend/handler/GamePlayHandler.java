@@ -3,11 +3,12 @@ package com.t0r.sandstormkingbackend.handler;
 import cn.hutool.json.JSONUtil;
 import com.sun.istack.internal.NotNull;
 import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerWSHandler;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
 import com.t0r.sandstormkingbackend.model.entity.Room;
 import com.t0r.sandstormkingbackend.model.entity.User;
 import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
-import com.t0r.sandstormkingbackend.model.enums.WebSocketMessageTypeEnum;
+import com.t0r.sandstormkingbackend.model.enums.WSMessageTypeEnum;
 import com.t0r.sandstormkingbackend.service.RoomService;
 import com.t0r.sandstormkingbackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +55,7 @@ public class GamePlayHandler extends TextWebSocketHandler {
         } else { // 加入房间
             // 构造响应
             WSMessage wsMessage = new WSMessage();
-            wsMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
+            wsMessage.setType(WSMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
             String message = String.format("%s加入房间", user.getUserName());
             wsMessage.setDescription(message);
 
@@ -67,25 +68,28 @@ public class GamePlayHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         WSMessage wsMessage = JSONUtil.toBean(message.getPayload(), WSMessage.class);
         String type = wsMessage.getType();
-        WebSocketMessageTypeEnum webSocketMessageTypeEnum = WebSocketMessageTypeEnum.valueOf(type);
+        WSMessageTypeEnum wsMessageTypeEnum = WSMessageTypeEnum.valueOf(type);
 
         // 从 Session 属性中获取公共参数
         Map<String, Object> attributes = session.getAttributes();
         User user = (User) attributes.get("user");
         Long roomId = (Long) attributes.get("roomId");
 
-        // 调用对应的消息处理方法
-        switch (webSocketMessageTypeEnum) {
+        switch (wsMessageTypeEnum) {
             case ROOM_STATE_CHANGED:
+            case START_GAME:
+                BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
+                wsMessage.getGameMessage().setType(ChallengerMessageTypeEnum.INIT_GAME.getValue());
+                challengerWSHandler.handleMessage(wsMessage.getGameMessage(), session, user, roomId);
                 BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
                 break;
             case CHALLENGER:
-                MessageBroadcastTypeEnum messageBroadcastTypeEnum =
+                MessageBroadcastTypeEnum messageBroadcastTypeEnum2 =
                         challengerWSHandler.handleMessage(wsMessage.getGameMessage(), session, user, roomId);
-                BroadcastUtil.sendMessage(messageBroadcastTypeEnum, playerSessions.get(roomId), wsMessage, session);
+                BroadcastUtil.sendMessage(messageBroadcastTypeEnum2, playerSessions.get(roomId), wsMessage, session);
                 break;
             default:
-                wsMessage.setType(WebSocketMessageTypeEnum.ERROR.getValue());
+                wsMessage.setType(WSMessageTypeEnum.ERROR.getValue());
                 wsMessage.setDescription("消息类型错误");
                 session.sendMessage(new TextMessage(JSONUtil.toJsonStr(wsMessage)));
         }
@@ -116,14 +120,14 @@ public class GamePlayHandler extends TextWebSocketHandler {
                 roomOwnerId.put(roomId, newOwnerId);
 
                 WSMessage ownerChangedMsg = new WSMessage();
-                ownerChangedMsg.setType(WebSocketMessageTypeEnum.INFO.getValue());
+                ownerChangedMsg.setType(WSMessageTypeEnum.INFO.getValue());
                 ownerChangedMsg.setDescription("房主已变更");
                 BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), ownerChangedMsg, session);
             }
         }
 
         WSMessage wsMessage = new WSMessage();
-        wsMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
+        wsMessage.setType(WSMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
         String message = String.format("%s离开房间", user.getUserName());
         wsMessage.setDescription(message);
         BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
