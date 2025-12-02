@@ -39,8 +39,8 @@ public class ChallengerGameManager {
     // 人数 -> 战场安排列表 ( 回合数 -> 战场 )
     public final static Map<Integer, List<Map<String, String>>> battlefieldArrangeMap = new HashMap<>();
 
-    // 房间 ID -> RoomDecks
-    private final static Map<Long, RoomDecks> roomDecksMap = new ConcurrentHashMap<>();
+    // 房间 ID -> RoomGameState
+    private final static Map<Long, RoomGameState> roomGameStateMap = new ConcurrentHashMap<>();
 
     ChallengerGameManager() {
         loadCardMap();
@@ -49,8 +49,26 @@ public class ChallengerGameManager {
 
     public void startGame(RoomInitRequest roomInitRequest) {
         Long roomId = roomInitRequest.getRoomId();
-        roomDecksMap.put(roomId, new RoomDecks(roomInitRequest));
+        roomGameStateMap.put(roomId, new RoomGameState(roomInitRequest));
     }
+
+    public LinkedList<CardInstance> buildCardInstances(Long roomId, Long userId, Integer OptionId) {
+        RoomGameState roomGameState = roomGameStateMap.get(roomId);
+        roomGameState.buildCardInstances(userId, OptionId);
+        return roomGameState.getChallengerPlayers().get(userId).getTempSelectedCardInstances();
+    }
+
+    public boolean confirmSelect(Long roomId, Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
+        return roomGameStateMap.get(roomId).confirmSelect(userId, OptionId, selectedCardInstanceIds);
+    }
+
+    /**
+     * @return 对手 ID
+     */
+    public Long readyBattle(Long roomId, Long userId, String battlefield) {
+        return roomGameStateMap.get(roomId).readyBattle(battlefield, userId);
+    }
+
 
     public void loadCardMap() {
         log.info("加载卡牌数据");
@@ -114,7 +132,7 @@ public class ChallengerGameManager {
                         Map<String, String> map = new HashMap<>();
                         // TODO 加载能否更优雅
                         int roundIndex = 1;
-                        for(String battlefield : rows.get(i)) {
+                        for (String battlefield : rows.get(i)) {
                             map.put(Integer.toString(roundIndex++), battlefield);
                         }
                         maps.add(map);

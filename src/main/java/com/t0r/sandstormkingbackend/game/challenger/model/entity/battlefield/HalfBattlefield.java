@@ -10,6 +10,9 @@ public class HalfBattlefield {
 
     public final static int MAX_REST_ZONE_SIZE = 6;
 
+    // 战斗前构筑是否就绪
+    private boolean isReady = false;
+
     private LinkedList<CardInstance> handZone = new LinkedList<>();
 
     // TODO 休息区 6 个的限制

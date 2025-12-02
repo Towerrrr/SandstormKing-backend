@@ -37,6 +37,30 @@ public class Battlefield {
         }
     }
 
+    public Long readyBattle(Long userId, Map<Long, ChallengerPlayer> challengerPlayers) {
+        halfBattlefieldMap.get(userId).setReady(true);
+
+        boolean allReady = true;
+        for (HalfBattlefield halfBattlefield : halfBattlefieldMap.values()) {
+            if (!halfBattlefield.isReady()) {
+                allReady = false;
+                break;
+            }
+        }
+
+        if (allReady) {
+            new Thread(() -> {
+                startBattle(challengerPlayers);
+                calculateBattle();
+            }).start();
+        }
+
+        for (Long opponentId : halfBattlefieldMap.keySet()) {
+            if (!Objects.equals(opponentId, userId)) return opponentId;
+        }
+        return null;
+    }
+
     /**
      * @param challengerPlayers 玩家 ID -> ChallengerPlayer
      */
@@ -102,12 +126,12 @@ public class Battlefield {
     }
 
     public void calculateBattle() {
-        HalfBattlefield[] halfBattlefields = new HalfBattlefield[] {
+        HalfBattlefield[] halfBattlefields = new HalfBattlefield[]{
                 halfBattlefieldMap.get(startPlayerId),
                 halfBattlefieldMap.get(elsePlayerId)
         };
         // 0: 当前防守方, 1: 当前进攻方
-        LinkedList<CardInstance>[] handZones = new LinkedList[] {
+        LinkedList<CardInstance>[] handZones = new LinkedList[]{
                 halfBattlefields[0].getHandZone(),
                 halfBattlefields[1].getHandZone()
         };

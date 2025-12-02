@@ -12,7 +12,7 @@ public enum GameMessageTypeEnum {
     DRAW_CARD("抽牌", "draw_card"),
     DRAW_AGAIN("再次抽牌", "draw_again"),
     CONFIRM_CHOICE("确认选择", "confirm_choice"),
-    READY("准备", "ready");
+    READY_BATTLE("准备战斗", "readyBattle");
 
     private final String text;
 

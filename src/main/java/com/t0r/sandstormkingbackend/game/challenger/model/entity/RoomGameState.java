@@ -24,7 +24,7 @@ import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGam
 
 @Data
 @Slf4j
-public class RoomDecks {
+public class RoomGameState {
 
 //    region 不变域
 
@@ -65,7 +65,7 @@ public class RoomDecks {
 
 //    endregion
 
-    public RoomDecks(RoomInitRequest roomInitRequest) {
+    public RoomGameState(RoomInitRequest roomInitRequest) {
         log.info("初始化房间: {}, 游戏：挑战者", roomId);
 
         // 不变域
@@ -239,26 +239,29 @@ public class RoomDecks {
 
 //    region 构筑阶段
 
-    public int SelectCardInstances(Long userId, Integer OptionId) {
-        log.info("用户 {} 选择卡牌, 选项 {}", userId, OptionId);
+    // 1. 选择选项（第一次抽卡）
+    // 2. 确认选择 / 再次抽卡
+    // 3. 确认选择
+
+    public void buildCardInstances(Long userId, Integer OptionId) {
+        log.info("用户 {} 构筑卡牌, 选项 {}", userId, OptionId);
 
         ChallengerPlayer currentPlayer = challengerPlayers.get(userId);
         Option option = getOption(OptionId);
         String level = option.getLevel();
-        Integer canDrawCount = option.getDrawCount();
         Integer fanCount = option.getFanCount();
 
         if (currentPlayer.isSecondSelect()) {
-            log.info("用户 {} 第二次选择卡牌", userId);
+            log.info("用户 {} 第二次抽取卡牌", userId);
             selectAndDiscardCardInstances(currentPlayer, null);
             drawCardInstances(currentPlayer, level);
             currentPlayer.setSecondSelect(false);
         } else { // 第一次选择
+            log.info("用户 {} 第一次抽取卡牌", userId);
             drawCardInstances(currentPlayer, level);
             currentPlayer.setExtraFanCount(currentPlayer.getExtraFanCount() + fanCount);
             currentPlayer.setSecondSelect(true);
         }
-        return canDrawCount;
     }
 
     public boolean confirmSelect(Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
@@ -314,6 +317,14 @@ public class RoomDecks {
             }
             tempSelectedCardInstances.remove(cardInstance);
         }
+    }
+
+    /**
+     * @return 对手 ID
+     */
+    public Long readyBattle(String battlefield, Long userId) {
+        log.info("用户 {} 确认准备，战场 {}", userId, battlefield);
+        return tempBattlefields.get(battlefield).readyBattle(userId, challengerPlayers);
     }
 
 //    endregion
