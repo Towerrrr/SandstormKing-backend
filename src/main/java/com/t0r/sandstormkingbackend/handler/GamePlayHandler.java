@@ -1,15 +1,12 @@
 package com.t0r.sandstormkingbackend.handler;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.sun.istack.internal.NotNull;
 import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerWSHandler;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
 import com.t0r.sandstormkingbackend.model.entity.Room;
 import com.t0r.sandstormkingbackend.model.entity.User;
+import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
 import com.t0r.sandstormkingbackend.model.enums.WebSocketMessageTypeEnum;
 import com.t0r.sandstormkingbackend.service.RoomService;
 import com.t0r.sandstormkingbackend.service.UserService;
@@ -43,40 +40,6 @@ public class GamePlayHandler extends TextWebSocketHandler {
     // 保存所有连接的会话，key: 房间 ID, value: 用户会话集合
     private final Map<Long, Set<WebSocketSession>> playerSessions = new ConcurrentHashMap<>();
 
-    private void broadcastToPlayers(Long roomId,
-                                    WSMessage wsMessage,
-                                    WebSocketSession excludeSession) throws Exception {
-        Set<WebSocketSession> sessionSet = playerSessions.get(roomId);
-        if (CollUtil.isNotEmpty(sessionSet)) {
-            // 创建 ObjectMapper
-            ObjectMapper objectMapper = new ObjectMapper();
-            // 配置序列化：将 Long 类型转为 String，解决丢失精度问题
-            SimpleModule module = new SimpleModule();
-            module.addSerializer(Long.class, ToStringSerializer.instance);
-            module.addSerializer(Long.TYPE, ToStringSerializer.instance); // 支持 long 基本类型
-            objectMapper.registerModule(module);
-            // 序列化为 JSON 字符串
-            String message = objectMapper.writeValueAsString(wsMessage);
-            TextMessage textMessage = new TextMessage(message);
-            for (WebSocketSession session : sessionSet) {
-                // 排除掉的 session 不发送
-                if (excludeSession != null && excludeSession.equals(session)) {
-                    continue;
-                }
-                if (session.isOpen()) {
-                    session.sendMessage(textMessage);
-                }
-            }
-        }
-    }
-
-    /**
-     * 全部广播
-     */
-    private void broadcastToPlayers(Long roomId, WSMessage wsMessage) throws Exception {
-        this.broadcastToPlayers(roomId, wsMessage, null);
-    }
-
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         User user = (User) session.getAttributes().get("user");
@@ -95,8 +58,7 @@ public class GamePlayHandler extends TextWebSocketHandler {
             String message = String.format("%s加入房间", user.getUserName());
             wsMessage.setDescription(message);
 
-            // 广播给同一房间的玩家
-            broadcastToPlayers(roomId, wsMessage);
+            BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
         }
         playerSessions.get(roomId).add(session);
     }
@@ -115,25 +77,18 @@ public class GamePlayHandler extends TextWebSocketHandler {
         // 调用对应的消息处理方法
         switch (webSocketMessageTypeEnum) {
             case ROOM_STATE_CHANGED:
-                handleRoomStateChangedMessage(wsMessage, session, user, roomId);
+                BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
                 break;
             case CHALLENGER:
-                challengerWSHandler.handleMessage(wsMessage.getGameMessage(), session, user, roomId);
-                // TODO 测试一下这样消息能否修改
-                broadcastToPlayers(roomId, wsMessage);
+                MessageBroadcastTypeEnum messageBroadcastTypeEnum =
+                        challengerWSHandler.handleMessage(wsMessage.getGameMessage(), session, user, roomId);
+                BroadcastUtil.sendMessage(messageBroadcastTypeEnum, playerSessions.get(roomId), wsMessage, session);
                 break;
             default:
                 wsMessage.setType(WebSocketMessageTypeEnum.ERROR.getValue());
                 wsMessage.setDescription("消息类型错误");
                 session.sendMessage(new TextMessage(JSONUtil.toJsonStr(wsMessage)));
         }
-    }
-
-    private void handleRoomStateChangedMessage(WSMessage wsMessage,
-                                               WebSocketSession session, User user, Long roomId) throws Exception {
-        wsMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
-        wsMessage.setDescription("房间状态变更");
-        broadcastToPlayers(roomId, wsMessage);
     }
 
     @Override
@@ -163,7 +118,7 @@ public class GamePlayHandler extends TextWebSocketHandler {
                 WSMessage ownerChangedMsg = new WSMessage();
                 ownerChangedMsg.setType(WebSocketMessageTypeEnum.INFO.getValue());
                 ownerChangedMsg.setDescription("房主已变更");
-                broadcastToPlayers(roomId, ownerChangedMsg);
+                BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), ownerChangedMsg, session);
             }
         }
 
@@ -171,7 +126,7 @@ public class GamePlayHandler extends TextWebSocketHandler {
         wsMessage.setType(WebSocketMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
         String message = String.format("%s离开房间", user.getUserName());
         wsMessage.setDescription(message);
-        broadcastToPlayers(roomId, wsMessage);
+        BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
     }
 
 

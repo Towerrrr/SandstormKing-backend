@@ -1,4 +1,4 @@
-package com.t0r.sandstormkingbackend.game.challenger.model.enums;
+package com.t0r.sandstormkingbackend.model.enums;
 
 import cn.hutool.core.util.ObjUtil;
 import lombok.Getter;

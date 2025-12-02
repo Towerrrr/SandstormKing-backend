@@ -5,10 +5,9 @@ import com.t0r.sandstormkingbackend.game.challenger.model.dto.ConfirmChoiceReque
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.GameMessageTypeEnum;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.MessageBroadcastTypeEnum;
+import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
 import com.t0r.sandstormkingbackend.model.entity.User;
-import com.t0r.sandstormkingbackend.model.enums.WebSocketMessageTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;

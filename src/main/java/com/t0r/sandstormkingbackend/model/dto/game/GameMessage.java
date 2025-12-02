@@ -2,7 +2,7 @@ package com.t0r.sandstormkingbackend.model.dto.game;
 
 import lombok.Data;
 
-import java.util.List;
+import java.util.Set;
 
 @Data
 public class GameMessage {
@@ -12,7 +12,7 @@ public class GameMessage {
     private String description;
 
     // 这条消息目标发送的用户id
-    private List<Long> userIds;
+    private Set<Long> userIds;
 
     private String body;
 
