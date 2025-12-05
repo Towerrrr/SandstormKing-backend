@@ -43,6 +43,10 @@ public class ChallengerGameManager {
         loadBattlefieldArrange();
     }
 
+    public void discardCardInstances(Long roomId, Long userId, Set<Integer> cardInstanceIds) {
+        roomGameStateMap.get(roomId).discardCardInstances(userId, cardInstanceIds);
+    }
+
     public ChallengerPlayer getChallengerPlayer(Long roomId, Long userId) {
         RoomGameState roomGameState = roomGameStateMap.get(roomId);
         return roomGameState.getChallengerPlayers().get(userId);

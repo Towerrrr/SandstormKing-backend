@@ -249,6 +249,8 @@ public class RoomGameState {
     // 2. 确认选择 / 再次抽卡
     // 3. 确认选择
 
+    // TODO 缺少第一次部分选择的逻辑
+
     public void buildCardInstances(Long userId, Integer OptionId) {
         log.info("用户 {} 构筑卡牌, 选项 {}", userId, OptionId);
 
@@ -314,12 +316,13 @@ public class RoomGameState {
 
     public void selectAndDiscardCardInstances(ChallengerPlayer currentPlayer, Set<Integer> selectedCardInstanceIds) {
         LinkedList<CardInstance> tempSelectedCardInstances = currentPlayer.getTempSelectedCardInstances();
+        LinkedList<CardInstance> handCardInstances = currentPlayer.getHandCardInstances();
         for (CardInstance cardInstance : tempSelectedCardInstances) {
             String level = cardMap.get(cardInstance.getCardId()).getLevel();
             if (selectedCardInstanceIds.contains(cardInstance.getId())) {
-                discardDecks.get(level).add(cardInstance);
+                handCardInstances.add(cardInstance);
             } else {
-                mainDecks.get(level).add(cardInstance);
+                discardDecks.get(level).add(cardInstance);
             }
             tempSelectedCardInstances.remove(cardInstance);
         }
@@ -334,6 +337,21 @@ public class RoomGameState {
     }
 
 //    endregion
+
+    public void discardCardInstances(Long userId, Set<Integer> cardInstanceIds) {
+        log.info("用户 {} 弃牌 {}", userId, cardInstanceIds);
+
+        LinkedList<CardInstance> handCardInstances = challengerPlayers.get(userId).getHandCardInstances();
+        Iterator<CardInstance> iterator = handCardInstances.iterator();
+        while (iterator.hasNext()) {
+            CardInstance cardInstance = iterator.next();
+            if (cardInstanceIds.contains(cardInstance.getId())) {
+                iterator.remove();
+                discardDecks.get(cardMap.get(cardInstance.getCardId()).getLevel()).add(cardInstance);
+            }
+        }
+
+    }
 
     public void award() {
         log.info("房间 {} 当前回合 {} 颁奖", roomId, currentRound);

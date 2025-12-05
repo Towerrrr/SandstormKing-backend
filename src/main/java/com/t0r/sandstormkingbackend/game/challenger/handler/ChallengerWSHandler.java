@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
 import javax.annotation.Resource;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
@@ -41,8 +42,18 @@ public class ChallengerWSHandler {
                 return handleConfirmChoiceMessage(gameMessage, roomId, user.getId());
             case READY_BATTLE:
                 return handleReadyBattleMessage(gameMessage, roomId, user.getId());
+            case DISCARD_CARD:
+                // 前端在开战前将之前所有丢弃的卡牌保存，到开战前才调用丢弃api
+                return handleDiscardCardMessage(gameMessage, roomId, user.getId());
         }
         return null;
+    }
+
+    private MessageBroadcastTypeEnum handleDiscardCardMessage(GameMessage gameMessage, Long roomId, Long userId) {
+        String body = gameMessage.getBody();
+        Set<Integer> cardInstanceIds = new HashSet<>(JSONUtil.toList(body, Integer.class));
+        challengerGameManager.discardCardInstances(roomId, userId, cardInstanceIds);
+        return MessageBroadcastTypeEnum.SELF;
     }
 
     private MessageBroadcastTypeEnum handleRefreshMessage(GameMessage gameMessage, Long roomId, Long userId) {

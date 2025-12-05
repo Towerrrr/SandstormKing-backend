@@ -12,7 +12,8 @@ public enum ChallengerMessageTypeEnum {
     DRAW_CARD("抽牌", "DRAW_CARD"),
     DRAW_AGAIN("再次抽牌", "DRAW_AGAIN"),
     CONFIRM_CHOICE("确认选择", "CONFIRM_CHOICE"),
-    READY_BATTLE("准备战斗", "READY_BATTLE");
+    READY_BATTLE("准备战斗", "READY_BATTLE"),
+    DISCARD_CARD("弃牌", "DISCARD_CARD");
 
     private final String text;
 
