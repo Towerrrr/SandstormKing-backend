@@ -43,6 +43,11 @@ public class ChallengerGameManager {
         loadBattlefieldArrange();
     }
 
+    public ChallengerPlayer getChallengerPlayer(Long roomId, Long userId) {
+        RoomGameState roomGameState = roomGameStateMap.get(roomId);
+        return roomGameState.getChallengerPlayers().get(userId);
+    }
+
     public void startGame(RoomInitRequest roomInitRequest) {
         Long roomId = roomInitRequest.getRoomId();
         roomGameStateMap.put(roomId, new RoomGameState(roomInitRequest));

@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.ConfirmChoiceRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
@@ -30,6 +31,9 @@ public class ChallengerWSHandler {
         switch (challengerMessageTypeEnum) {
             case INIT_GAME:
                 return handleStartGameMessage(gameMessage);
+            case REFRESH:
+                // TODO 先粗暴地让前端请求资源，后续再优化
+                return handleRefreshMessage(gameMessage, roomId, user.getId());
             case DRAW_CARD:
             case DRAW_AGAIN:
                 return handleDrawCardMessage(gameMessage, roomId, user.getId());
@@ -39,6 +43,13 @@ public class ChallengerWSHandler {
                 return handleReadyBattleMessage(gameMessage, roomId, user.getId());
         }
         return null;
+    }
+
+    private MessageBroadcastTypeEnum handleRefreshMessage(GameMessage gameMessage, Long roomId, Long userId) {
+        // TODO 后续考虑优化一个 ChallengerPlayerVO
+        ChallengerPlayer challengerPlayer = challengerGameManager.getChallengerPlayer(roomId, userId);
+        gameMessage.setBody(JSONUtil.toJsonStr(challengerPlayer));
+        return MessageBroadcastTypeEnum.SELF;
     }
 
     private MessageBroadcastTypeEnum handleReadyBattleMessage(GameMessage gameMessage, Long roomId, Long userId) {

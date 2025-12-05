@@ -65,6 +65,8 @@ public class RoomGameState {
 
 //    endregion
 
+//    region 构造方法
+
     public RoomGameState(RoomInitRequest roomInitRequest) {
         log.info("初始化房间: {}, 游戏：挑战者", roomId);
 
@@ -121,6 +123,8 @@ public class RoomGameState {
             log.error("加载房间 {} 的抽卡计划失败", roomId, e);
         }
     }
+
+//    endregion
 
 //    region 初始化变化域
 
