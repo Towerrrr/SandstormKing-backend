@@ -6,10 +6,10 @@ import lombok.Getter;
 @Getter
 public enum BattlefieldEnum {
 
-    GREEN("绿色", "green"),
-    RED("红色", "red"),
-    PURPLE("紫色", "purple"),
-    YELLOW("黄色", "yellow");
+    GREEN("绿色", "GREEN"),
+    RED("红色", "RED"),
+    PURPLE("紫色", "PURPLE"),
+    YELLOW("黄色", "YELLOW");
 
     private final String text;
 

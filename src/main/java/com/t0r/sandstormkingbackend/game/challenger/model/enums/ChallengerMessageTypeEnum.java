@@ -6,13 +6,13 @@ import lombok.Getter;
 @Getter
 public enum ChallengerMessageTypeEnum {
 
-    INIT_GAME("初始化游戏", "init_game"),
-    END_GAME("结束游戏", "end_game"),
-    REFRESH("刷新", "refresh"),
-    DRAW_CARD("抽牌", "draw_card"),
-    DRAW_AGAIN("再次抽牌", "draw_again"),
-    CONFIRM_CHOICE("确认选择", "confirm_choice"),
-    READY_BATTLE("准备战斗", "readyBattle");
+    INIT_GAME("初始化游戏", "INIT_GAME"),
+    END_GAME("结束游戏", "END_GAME"),
+    REFRESH("刷新", "REFRESH"),
+    DRAW_CARD("抽牌", "DRAW_CARD"),
+    DRAW_AGAIN("再次抽牌", "DRAW_AGAIN"),
+    CONFIRM_CHOICE("确认选择", "CONFIRM_CHOICE"),
+    READY_BATTLE("准备战斗", "READY_BATTLE");
 
     private final String text;
 

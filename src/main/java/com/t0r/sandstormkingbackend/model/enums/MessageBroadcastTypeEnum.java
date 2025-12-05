@@ -6,10 +6,10 @@ import lombok.Getter;
 @Getter
 public enum MessageBroadcastTypeEnum {
 
-    ALL("全体", "all"),
-    OTHERS("除自己外", "others"),
-    SELF("自己", "self"),
-    CUSTOM("自定义", "custom");
+    ALL("全体", "ALL"),
+    OTHERS("除自己外", "OTHERS"),
+    SELF("自己", "SELF"),
+    CUSTOM("自定义", "CUSTOM");
 
     private final String text;
 
