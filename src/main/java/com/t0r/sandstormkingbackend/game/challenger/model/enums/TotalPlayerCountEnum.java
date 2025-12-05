@@ -6,10 +6,10 @@ import lombok.Getter;
 @Getter
 public enum TotalPlayerCountEnum {
 
-    TWO(2, ""),
+    TWO(2, "battlefield-schedules/2players.csv"),
     FOUR(4, "battlefield-schedules/4players.csv"),
-    SIX(6, ""),
-    EIGHT(8, "");
+    SIX(6, "battlefield-schedules/6players.csv"),
+    EIGHT(8, "battlefield-schedules/8players.csv");
 
     private final Integer value;
 
