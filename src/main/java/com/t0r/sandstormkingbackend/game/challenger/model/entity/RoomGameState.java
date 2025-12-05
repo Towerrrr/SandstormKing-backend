@@ -74,7 +74,7 @@ public class RoomGameState {
         this.roomId = roomInitRequest.getRoomId();
 
         Integer playerCount = roomInitRequest.getPlayerCount();
-        ThrowUtils.throwIf(playerCount < MAX_PLAYER_COUNT,
+        ThrowUtils.throwIf(playerCount > MAX_PLAYER_COUNT,
                 ErrorCode.PARAMS_ERROR, "最多只能加入 " + MAX_PLAYER_COUNT + " 人");
         if (playerCount % 2 == 0) {
             this.totalPlayerCount = playerCount;
@@ -128,7 +128,7 @@ public class RoomGameState {
 
 //    region 初始化变化域
 
-    public void initChallengerPlayers(List<Long> userIds) {
+    public void initChallengerPlayers(Set<Long> userIds) {
         log.info("初始化房间 {} 的玩家信息", roomId);
 
         // 打乱战场分配
@@ -188,7 +188,9 @@ public class RoomGameState {
         // 打乱主牌堆
         LevelEnum[] levelEnums = LevelEnum.values();
         for (LevelEnum levelEnum : levelEnums) {
-            Collections.shuffle(mainDecks.get(levelEnum.getValue()));
+            if (levelEnum.isKept()) {
+                Collections.shuffle(mainDecks.get(levelEnum.getValue()));
+            }
         }
 
         log.info("房间 {} 的卡牌实例初始化成功，共 {} 张", roomId, localId - 1);

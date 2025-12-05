@@ -20,12 +20,12 @@ public class Battlefield {
 
     String name;
 
-    Map<Long, HalfBattlefield> halfBattlefieldMap;
+    Map<Long, HalfBattlefield> halfBattlefieldMap = new HashMap<>();
 
     Long startPlayerId;
     Long elsePlayerId;
 
-    LinkedList<Battle> battleList;
+    LinkedList<Battle> battleList = new LinkedList<>();
 
     Long winnerId;
 

@@ -2,7 +2,7 @@ package com.t0r.sandstormkingbackend.game.challenger.model.dto;
 
 import lombok.Data;
 
-import java.util.List;
+import java.util.Set;
 
 @Data
 public class RoomInitRequest {
@@ -13,6 +13,6 @@ public class RoomInitRequest {
 
     private String version;
 
-    private List<Long> userIds;
+    private Set<Long> userIds;
 
 }

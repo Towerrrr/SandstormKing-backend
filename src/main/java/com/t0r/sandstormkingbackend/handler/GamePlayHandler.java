@@ -3,7 +3,6 @@ package com.t0r.sandstormkingbackend.handler;
 import cn.hutool.json.JSONUtil;
 import com.sun.istack.internal.NotNull;
 import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerWSHandler;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
 import com.t0r.sandstormkingbackend.model.entity.Room;
 import com.t0r.sandstormkingbackend.model.entity.User;
@@ -79,7 +78,6 @@ public class GamePlayHandler extends TextWebSocketHandler {
             case ROOM_STATE_CHANGED:
             case START_GAME:
                 BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
-                wsMessage.getGameMessage().setType(ChallengerMessageTypeEnum.INIT_GAME.getValue());
                 challengerWSHandler.handleMessage(wsMessage.getGameMessage(), session, user, roomId);
                 BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
                 break;
