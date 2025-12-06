@@ -156,16 +156,18 @@ public class Battlefield {
                 battle.getAttacker().add(attackerCard);
             }
             // 将上一轮所有进攻牌放入休息区
-            LinkedList<CardInstance> attacker = battleList.getLast().getAttacker();
-            for (CardInstance cardInstance : attacker) {
-                Map<Integer, List<CardInstance>> restZone = halfBattlefields[defenderIdx].getRestZone();
-                restZone.putIfAbsent(cardInstance.getCardId(), new ArrayList<>());
-                restZone.get(cardInstance.getCardId()).add(cardInstance);
-                if (restZone.size() > MAX_REST_ZONE_SIZE) {
-                    winnerId = attackerIdx == 0 ? startPlayerId : elsePlayerId;
-                    battleList.add(battle);
-                    log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
-                    return;
+            if (!battleList.isEmpty()) { // 第一轮不用
+                LinkedList<CardInstance> attacker = battleList.getLast().getAttacker();
+                for (CardInstance cardInstance : attacker) {
+                    Map<Integer, List<CardInstance>> restZone = halfBattlefields[defenderIdx].getRestZone();
+                    restZone.putIfAbsent(cardInstance.getCardId(), new ArrayList<>());
+                    restZone.get(cardInstance.getCardId()).add(cardInstance);
+                    if (restZone.size() > MAX_REST_ZONE_SIZE) {
+                        winnerId = attackerIdx == 0 ? startPlayerId : elsePlayerId;
+                        battleList.add(battle);
+                        log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
+                        return;
+                    }
                 }
             }
 

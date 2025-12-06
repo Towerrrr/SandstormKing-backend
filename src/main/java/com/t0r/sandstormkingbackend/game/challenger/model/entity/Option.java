@@ -11,6 +11,6 @@ public class Option {
 
     private String level;
 
-    private Integer fanCount;
+    private Integer fanCount = 0;
 
 }

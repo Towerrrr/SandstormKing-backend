@@ -330,13 +330,13 @@ public class RoomGameState {
         Set<CardInstance> selectedCards = currentPlayer.getSelectedCards();
         for (CardInstance cardInstance : tempSelectedCardInstances) {
             String level = cardMap.get(cardInstance.getCardId()).getLevel();
-            if (selectedCardInstanceIds.contains(cardInstance.getId())) {
+            if (selectedCardInstanceIds != null && selectedCardInstanceIds.contains(cardInstance.getId())) {
                 selectedCards.add(cardInstance);
             } else {
                 discardDecks.get(level).add(cardInstance);
             }
-            tempSelectedCardInstances.remove(cardInstance);
         }
+        tempSelectedCardInstances.clear();
     }
 
     /**
