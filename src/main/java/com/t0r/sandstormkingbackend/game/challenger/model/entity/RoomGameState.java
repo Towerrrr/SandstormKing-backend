@@ -245,51 +245,62 @@ public class RoomGameState {
 
 //    region 构筑阶段
 
-    // 1. 选择选项（第一次抽卡）
-    // 2. 确认选择 / 再次抽卡
-    // 3. 确认选择
-
-    // TODO 缺少第一次部分选择的逻辑
-
-    public void buildCardInstances(Long userId, Integer OptionId) {
+    /**
+     * 1. 选择选项（第一次抽卡）
+     * 2. 确认选择 / 再次抽卡 / 部分选择 & 再次抽卡
+     * 3. 确认选择
+     */
+    public void buildCardInstances(Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
         log.info("用户 {} 构筑卡牌, 选项 {}", userId, OptionId);
 
         ChallengerPlayer currentPlayer = challengerPlayers.get(userId);
         Option option = getOption(OptionId);
         String level = option.getLevel();
+        Integer drawCount = option.getDrawCount();
         Integer fanCount = option.getFanCount();
 
-        if (currentPlayer.isSecondSelect()) {
-            log.info("用户 {} 第二次抽取卡牌", userId);
-            selectAndDiscardCardInstances(currentPlayer, null);
-            drawCardInstances(currentPlayer, level);
+        if (selectedCardInstanceIds == null || selectedCardInstanceIds.isEmpty()) {
+            if (currentPlayer.isSecondSelect()) {
+                log.info("用户 {} 第二次抽取卡牌（第一次未选择）", userId);
+                selectAndDiscardCardInstances(currentPlayer, null);
+                drawCardInstances(currentPlayer, level);
+                currentPlayer.setSecondSelect(false);
+            } else {
+                log.info("用户 {} 第一次抽取卡牌", userId);
+                drawCardInstances(currentPlayer, level);
+                currentPlayer.setExtraFanCount(currentPlayer.getExtraFanCount() + fanCount);
+                currentPlayer.setSecondSelect(true);
+            }
+        } else {
+            selectAndDiscardCardInstances(currentPlayer, selectedCardInstanceIds);
+
+            Set<CardInstance> selectedCards = currentPlayer.getSelectedCards();
+            ThrowUtils.throwIf(selectedCards.size() > drawCount, ErrorCode.PARAMS_ERROR,
+                    "选择的卡牌数不可超过" + drawCount);
+            if (selectedCards.size() == drawCount) {
+                log.info("用户 {} 确认选择卡牌", userId);
+                confirmSelect(userId);
+            } else {
+                log.info("用户 {} 部分选择，再次抽卡", userId);
+                drawCardInstances(currentPlayer, level);
+            }
             currentPlayer.setSecondSelect(false);
-        } else { // 第一次选择
-            log.info("用户 {} 第一次抽取卡牌", userId);
-            drawCardInstances(currentPlayer, level);
-            currentPlayer.setExtraFanCount(currentPlayer.getExtraFanCount() + fanCount);
-            currentPlayer.setSecondSelect(true);
         }
+
     }
 
-    public boolean confirmSelect(Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
-        log.info("用户 {} 确认选择卡牌", userId);
+    private void confirmSelect(Long userId) {
         ChallengerPlayer currentPlayer = challengerPlayers.get(userId);
-        int canDrawCount = getOption(OptionId).getDrawCount();
-
-        if (selectedCardInstanceIds != null && !selectedCardInstanceIds.isEmpty()) {
-            ThrowUtils.throwIf(selectedCardInstanceIds.size() > canDrawCount,
-                    ErrorCode.PARAMS_ERROR, "选择的卡牌数不可超过" + canDrawCount);
-            selectAndDiscardCardInstances(currentPlayer, selectedCardInstanceIds);
-            currentPlayer.setSecondSelect(false);
-        }
-        return true;
+        Set<CardInstance> selectedCards = currentPlayer.getSelectedCards();
+        LinkedList<CardInstance> handCardInstances = currentPlayer.getHandCardInstances();
+        handCardInstances.addAll(selectedCards);
+        selectedCards.clear();
     }
 
     /**
      * 根据 OptionId 获取当前回合的选项
      */
-    public Option getOption(Integer OptionId) {
+    private Option getOption(Integer OptionId) {
         List<Option> options = drawSchedules.get(currentRound).getOptions();
         for (Option option : options) {
             if (option.getId().equals(OptionId)) {
@@ -299,7 +310,7 @@ public class RoomGameState {
         return null;
     }
 
-    public void drawCardInstances(ChallengerPlayer currentPlayer, String level) {
+    private void drawCardInstances(ChallengerPlayer currentPlayer, String level) {
         final int DRAW_COUNT = 5;
 
         if (mainDecks.get(level).size() < DRAW_COUNT) {
@@ -314,13 +325,13 @@ public class RoomGameState {
         }
     }
 
-    public void selectAndDiscardCardInstances(ChallengerPlayer currentPlayer, Set<Integer> selectedCardInstanceIds) {
+    private void selectAndDiscardCardInstances(ChallengerPlayer currentPlayer, Set<Integer> selectedCardInstanceIds) {
         LinkedList<CardInstance> tempSelectedCardInstances = currentPlayer.getTempSelectedCardInstances();
-        LinkedList<CardInstance> handCardInstances = currentPlayer.getHandCardInstances();
+        Set<CardInstance> selectedCards = currentPlayer.getSelectedCards();
         for (CardInstance cardInstance : tempSelectedCardInstances) {
             String level = cardMap.get(cardInstance.getCardId()).getLevel();
             if (selectedCardInstanceIds.contains(cardInstance.getId())) {
-                handCardInstances.add(cardInstance);
+                selectedCards.add(cardInstance);
             } else {
                 discardDecks.get(level).add(cardInstance);
             }

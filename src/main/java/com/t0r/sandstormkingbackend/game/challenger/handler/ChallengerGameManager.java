@@ -57,14 +57,10 @@ public class ChallengerGameManager {
         roomGameStateMap.put(roomId, new RoomGameState(roomInitRequest));
     }
 
-    public LinkedList<CardInstance> buildCardInstances(Long roomId, Long userId, Integer OptionId) {
+    public LinkedList<CardInstance> buildCardInstances(Long roomId, Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
         RoomGameState roomGameState = roomGameStateMap.get(roomId);
-        roomGameState.buildCardInstances(userId, OptionId);
+        roomGameState.buildCardInstances(userId, OptionId, selectedCardInstanceIds);
         return roomGameState.getChallengerPlayers().get(userId).getTempSelectedCardInstances();
-    }
-
-    public boolean confirmSelect(Long roomId, Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
-        return roomGameStateMap.get(roomId).confirmSelect(userId, OptionId, selectedCardInstanceIds);
     }
 
     /**

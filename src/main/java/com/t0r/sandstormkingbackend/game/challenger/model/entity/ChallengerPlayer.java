@@ -14,7 +14,8 @@ public class ChallengerPlayer {
 
     private LinkedList<CardInstance> handCardInstances = new LinkedList<>();
 
-    private boolean isSecondSelect = true;
+    private boolean isSecondSelect = false;
+    private Set<CardInstance> selectedCards = new HashSet<>(); // 用来处理第一次选择只部分选择
     private LinkedList<CardInstance> tempSelectedCardInstances = new LinkedList<>();
 
     private List<CupInstance> cupInstances = new ArrayList<>();

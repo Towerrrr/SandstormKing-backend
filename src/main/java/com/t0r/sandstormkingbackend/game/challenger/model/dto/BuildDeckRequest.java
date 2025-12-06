@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Set;
 
 @Data
-public class ConfirmChoiceRequest {
+public class BuildDeckRequest {
 
     private Integer optionId;
 

@@ -9,9 +9,7 @@ public enum ChallengerMessageTypeEnum {
     INIT_GAME("初始化游戏", "INIT_GAME"),
     END_GAME("结束游戏", "END_GAME"),
     REFRESH("刷新", "REFRESH"),
-    DRAW_CARD("抽牌", "DRAW_CARD"),
-    DRAW_AGAIN("再次抽牌", "DRAW_AGAIN"),
-    CONFIRM_CHOICE("确认选择", "CONFIRM_CHOICE"),
+    BUILD_DECK("构建牌组", "BUILD_DECK"),
     READY_BATTLE("准备战斗", "READY_BATTLE"),
     DISCARD_CARD("弃牌", "DISCARD_CARD");
 
