@@ -5,7 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.Util.MyListUtil;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
-import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
@@ -67,13 +67,13 @@ public class RoomGameState {
 
 //    region 构造方法
 
-    public RoomGameState(RoomInitRequest roomInitRequest) {
+    public RoomGameState(InitGameRequest initGameRequest) {
         log.info("初始化房间: {}, 游戏：挑战者", roomId);
 
         // 不变域
-        this.roomId = roomInitRequest.getRoomId();
+        this.roomId = initGameRequest.getRoomId();
 
-        Integer playerCount = roomInitRequest.getPlayerCount();
+        Integer playerCount = initGameRequest.getPlayerCount();
         ThrowUtils.throwIf(playerCount > MAX_PLAYER_COUNT,
                 ErrorCode.PARAMS_ERROR, "最多只能加入 " + MAX_PLAYER_COUNT + " 人");
         if (playerCount % 2 == 0) {
@@ -85,12 +85,12 @@ public class RoomGameState {
         }
         this.battlefieldCount = totalPlayerCount / 2;
 
-        this.version = roomInitRequest.getVersion();
+        this.version = initGameRequest.getVersion();
         loadDrawSchedule();
 
         // 变化域
         this.currentRound = RoundEnum.getFirstRound().getValue();
-        initChallengerPlayers(roomInitRequest.getUserIds());
+        initChallengerPlayers(initGameRequest.getUserIds());
         initCupInstance();
         initCardInstance();
         resetBattlefield();
@@ -358,7 +358,10 @@ public class RoomGameState {
             CardInstance cardInstance = iterator.next();
             if (cardInstanceIds.contains(cardInstance.getId())) {
                 iterator.remove();
-                discardDecks.get(cardMap.get(cardInstance.getCardId()).getLevel()).add(cardInstance);
+                String level = cardMap.get(cardInstance.getCardId()).getLevel();
+                if (LevelEnum.valueOf(level).isKept()) {
+                    discardDecks.get(level).add(cardInstance);
+                }
             }
         }
 

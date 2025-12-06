@@ -2,7 +2,8 @@ package com.t0r.sandstormkingbackend.game.challenger.handler;
 
 import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.BuildDeckRequest;
-import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
@@ -16,6 +17,7 @@ import org.springframework.web.socket.WebSocketSession;
 import javax.annotation.Resource;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -31,7 +33,7 @@ public class ChallengerWSHandler {
         ChallengerMessageTypeEnum challengerMessageTypeEnum = ChallengerMessageTypeEnum.valueOf(type);
         switch (challengerMessageTypeEnum) {
             case INIT_GAME:
-                return handleStartGameMessage(gameMessage);
+                return handleInitGameMessage(gameMessage);
             case REFRESH:
                 // TODO 先粗暴地让前端请求资源，后续再优化
                 return handleRefreshMessage(gameMessage, roomId, user.getId());
@@ -78,10 +80,11 @@ public class ChallengerWSHandler {
         return MessageBroadcastTypeEnum.SELF;
     }
 
-    private MessageBroadcastTypeEnum handleStartGameMessage(GameMessage gameMessage) throws Exception {
+    private MessageBroadcastTypeEnum handleInitGameMessage(GameMessage gameMessage) throws Exception {
         String body = gameMessage.getBody();
-        RoomInitRequest roomInitRequest = JSONUtil.toBean(body, RoomInitRequest.class);
-        challengerGameManager.startGame(roomInitRequest);
+        InitGameRequest initGameRequest = JSONUtil.toBean(body, InitGameRequest.class);
+        Map<Integer, Card> cardMap = challengerGameManager.initGame(initGameRequest);
+        gameMessage.setBody(JSONUtil.toJsonStr(cardMap));
         return MessageBroadcastTypeEnum.ALL;
     }
 

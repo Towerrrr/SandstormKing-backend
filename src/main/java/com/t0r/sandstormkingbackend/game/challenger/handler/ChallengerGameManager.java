@@ -3,7 +3,7 @@ package com.t0r.sandstormkingbackend.game.challenger.handler;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.json.JSONUtil;
 import com.opencsv.CSVReader;
-import com.t0r.sandstormkingbackend.game.challenger.model.dto.RoomInitRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.*;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TotalPlayerCountEnum;
 import com.t0r.sandstormkingbackend.service.RoomService;
@@ -52,9 +52,10 @@ public class ChallengerGameManager {
         return roomGameState.getChallengerPlayers().get(userId);
     }
 
-    public void startGame(RoomInitRequest roomInitRequest) {
-        Long roomId = roomInitRequest.getRoomId();
-        roomGameStateMap.put(roomId, new RoomGameState(roomInitRequest));
+    public Map<Integer, Card> initGame(InitGameRequest initGameRequest) {
+        Long roomId = initGameRequest.getRoomId();
+        roomGameStateMap.put(roomId, new RoomGameState(initGameRequest));
+        return cardMap;
     }
 
     public LinkedList<CardInstance> buildCardInstances(Long roomId, Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
