@@ -126,6 +126,7 @@ public class Battlefield {
     }
 
     public void calculateBattle() {
+        Long[] playerIds = new Long[]{startPlayerId, elsePlayerId};
         HalfBattlefield[] halfBattlefields = new HalfBattlefield[]{
                 halfBattlefieldMap.get(startPlayerId),
                 halfBattlefieldMap.get(elsePlayerId)
@@ -136,28 +137,41 @@ public class Battlefield {
                 halfBattlefields[1].getHandZone()
         };
 
-        int defenderIdx = 0;
-        int attackerIdx = 1;
+        int attackerIdx = 0;
+        int defenderIdx = 1;
 
-        while (!handZones[defenderIdx].isEmpty() && !handZones[attackerIdx].isEmpty()) {
-            Integer defenderPower = 0;
-            Integer attackerPower = 0;
+        Integer defenderPower = 0;
+        Integer attackerPower = 0;
 
-            Battle battle = new Battle();
-            // 防守方出牌
-            CardInstance defenderCard = handZones[defenderIdx].removeFirst();
-            battle.setDefender(defenderCard);
-            defenderPower = defenderCard.getCurrentPower();
+        // TODO 判断有人战斗开始直接弃光手牌？
 
+        // 最开始进攻方先放一张牌
+        Battle battle = new Battle();
+        CardInstance attackerCard = handZones[attackerIdx].removeFirst();
+        battle.getAttacker().add(attackerCard);
+        attackerPower = attackerCard.getCurrentPower();
+
+        // 进行到最后可能先没牌的玩家是赢的
+        while (!handZones[defenderIdx].isEmpty() || !handZones[attackerIdx].isEmpty()) {
             // 进攻方出牌，直到攻击力 >= 防守力 或手牌用完
             while (attackerPower < defenderPower && !handZones[attackerIdx].isEmpty()) {
-                CardInstance attackerCard = handZones[attackerIdx].removeFirst();
+                attackerCard = handZones[attackerIdx].removeFirst();
                 attackerPower += attackerCard.getCurrentPower();
                 battle.getAttacker().add(attackerCard);
             }
-            // 将上一轮所有进攻牌放入休息区
-            if (!battleList.isEmpty()) { // 第一轮不用
-                LinkedList<CardInstance> attacker = battleList.getLast().getAttacker();
+            battleList.add(battle);
+            // 进攻方手牌耗尽攻击力依旧不足
+            if (attackerPower < defenderPower) {
+                winnerId = defenderIdx == 0 ? startPlayerId : elsePlayerId;
+                log.info("战斗结束，进攻方无多余手牌，胜利者为 {}", winnerId);
+                break;
+            }
+            // 将上一轮的上一轮所有进攻牌放入休息区
+            if (battleList.size() >= 2) {
+                Iterator<Battle> descendingIterator = battleList.descendingIterator();
+                descendingIterator.next();
+                LinkedList<CardInstance> attacker = descendingIterator.next().getAttacker();
+
                 for (CardInstance cardInstance : attacker) {
                     Map<Integer, List<CardInstance>> restZone = halfBattlefields[defenderIdx].getRestZone();
                     restZone.putIfAbsent(cardInstance.getCardId(), new ArrayList<>());
@@ -171,27 +185,18 @@ public class Battlefield {
                 }
             }
 
-            battleList.add(battle);
-
             // 交换攻守（下回合由上一轮进攻方最后一张牌做防守方）
             if (!battle.getAttacker().isEmpty()) {
-                // TODO 后续加入技能可能要改，这里将上一轮进攻的最后一张牌放回手牌
                 CardInstance lastAttacker = battle.getAttacker().getLast();
-                handZones[defenderIdx].addFirst(lastAttacker); // 加回防守方手牌最前面
+                battle = new Battle();
+                battle.setDefender(lastAttacker);
+                defenderPower = lastAttacker.getCurrentPower();
+                attackerPower = 0;
             }
 
             int temp = defenderIdx;
             defenderIdx = attackerIdx;
             attackerIdx = temp;
         }
-
-        if (handZones[0].isEmpty()) {
-            winnerId = startPlayerId;
-        } else {
-            winnerId = elsePlayerId;
-        }
-        log.info("战斗结束，进攻方无多余手牌，胜利者为 {}", winnerId);
     }
-
-
 }
