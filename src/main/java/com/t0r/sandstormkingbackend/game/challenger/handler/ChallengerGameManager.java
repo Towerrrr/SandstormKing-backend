@@ -5,6 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.opencsv.CSVReader;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.*;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TotalPlayerCountEnum;
 import com.t0r.sandstormkingbackend.service.RoomService;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,10 @@ public class ChallengerGameManager {
 
     public void discardCardInstances(Long roomId, Long userId, Set<Integer> cardInstanceIds) {
         roomGameStateMap.get(roomId).discardCardInstances(userId, cardInstanceIds);
+    }
+
+    public Battlefield getBattlefield(Long roomId, String battlefield) {
+        return roomGameStateMap.get(roomId).getTempBattlefields().get(battlefield);
     }
 
     public ChallengerPlayer getChallengerPlayer(Long roomId, Long userId) {

@@ -1,11 +1,14 @@
 package com.t0r.sandstormkingbackend.game.challenger.handler;
 
 import cn.hutool.json.JSONUtil;
+import com.t0r.sandstormkingbackend.exception.ErrorCode;
+import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.BuildDeckRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
@@ -34,9 +37,11 @@ public class ChallengerWSHandler {
         switch (challengerMessageTypeEnum) {
             case INIT_GAME:
                 return handleInitGameMessage(gameMessage);
-            case REFRESH:
+            case GET_PLAYER:
                 // TODO 先粗暴地让前端请求资源，后续再优化
-                return handleRefreshMessage(gameMessage, roomId, user.getId());
+                return handleGetPlayerMessage(gameMessage, roomId, user.getId());
+            case GET_BATTLEFIELD:
+                return handleGetBattlefieldMessage(gameMessage, roomId, user.getId());
             case BUILD_DECK:
                 return handleBuildDeckMessage(gameMessage, roomId, user.getId());
             case READY_BATTLE:
@@ -48,6 +53,15 @@ public class ChallengerWSHandler {
         return null;
     }
 
+    private MessageBroadcastTypeEnum handleGetBattlefieldMessage(GameMessage gameMessage, Long roomId, Long userId) {
+        String battlefieldName = gameMessage.getBody();
+        // TODO 这一层所有方法有参数都要在这里做校验
+        ThrowUtils.throwIf(battlefieldName == null, ErrorCode.PARAMS_ERROR, "请选择战斗场");
+        Battlefield battlefield = challengerGameManager.getBattlefield(roomId, battlefieldName);
+        gameMessage.setBody(JSONUtil.toJsonStr(battlefield));
+        return MessageBroadcastTypeEnum.SELF;
+    }
+
     private MessageBroadcastTypeEnum handleDiscardCardMessage(GameMessage gameMessage, Long roomId, Long userId) {
         String body = gameMessage.getBody();
         Set<Integer> cardInstanceIds = new HashSet<>(JSONUtil.toList(body, Integer.class));
@@ -55,7 +69,7 @@ public class ChallengerWSHandler {
         return MessageBroadcastTypeEnum.SELF;
     }
 
-    private MessageBroadcastTypeEnum handleRefreshMessage(GameMessage gameMessage, Long roomId, Long userId) {
+    private MessageBroadcastTypeEnum handleGetPlayerMessage(GameMessage gameMessage, Long roomId, Long userId) {
         // TODO 后续考虑优化一个 ChallengerPlayerVO
         ChallengerPlayer challengerPlayer = challengerGameManager.getChallengerPlayer(roomId, userId);
         gameMessage.setBody(JSONUtil.toJsonStr(challengerPlayer));
