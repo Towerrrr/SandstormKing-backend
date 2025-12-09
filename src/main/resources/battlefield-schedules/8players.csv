@@ -1,10 +1,9 @@
 1, 2, 3, 4, 5, 6, 7
-green, green, green, green, green, green, green
-yellow, green, yellow, yellow, purple, red, red
-yellow, yellow, green, red, red, purple, purple
-red, yellow, yellow, green, yellow, yellow, yellow
-red, red, purple, purple, red, red, green
-green, purple, red, purple, purple, purple, yellow
-purple, purple, purple, yellow, yellow, green, purple
-purple, red, red, red, green, yellow, red
-
+GREEN, GREEN, GREEN, GREEN, GREEN, GREEN, GREEN
+YELLOW, GREEN, YELLOW, YELLOW, PURPLE, RED, RED
+YELLOW, YELLOW, GREEN, RED, RED, PURPLE, PURPLE
+RED, YELLOW, YELLOW, GREEN, YELLOW, YELLOW, YELLOW
+RED, RED, PURPLE, PURPLE, RED, RED, GREEN
+GREEN, PURPLE, RED, PURPLE, PURPLE, PURPLE, YELLOW
+PURPLE, PURPLE, PURPLE, YELLOW, YELLOW, GREEN, PURPLE
+PURPLE, RED, RED, RED, GREEN, YELLOW, RED
