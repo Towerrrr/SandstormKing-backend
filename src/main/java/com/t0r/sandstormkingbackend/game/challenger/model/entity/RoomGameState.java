@@ -14,6 +14,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.util.*;
@@ -37,6 +38,8 @@ public class RoomGameState {
     private Integer battlefieldCount;
 
     private boolean hasBot;
+
+    private Set<WebSocketSession> playerSessions = new HashSet<>();
 
     // 回合数 -> 抽卡计划
     private Map<String, DrawSchedule> drawSchedules = new HashMap<>();
@@ -67,7 +70,7 @@ public class RoomGameState {
 
 //    region 构造方法
 
-    public RoomGameState(InitGameRequest initGameRequest) {
+    public RoomGameState(InitGameRequest initGameRequest, Set<WebSocketSession> webSocketSessions) {
         log.info("初始化房间: {}, 游戏：挑战者", roomId);
 
         // 不变域
@@ -87,6 +90,8 @@ public class RoomGameState {
 
         this.version = initGameRequest.getVersion();
         loadDrawSchedule();
+
+        this.playerSessions = webSocketSessions;
 
         // 变化域
         this.currentRound = RoundEnum.getFirstRound().getValue();
@@ -250,7 +255,7 @@ public class RoomGameState {
      * 2. 确认选择 / 再次抽卡 / 部分选择 & 再次抽卡
      * 3. 确认选择
      */
-    public void buildCardInstances(Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
+    public LinkedList<CardInstance> buildCardInstances(Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
         log.info("用户 {} 构筑卡牌, 选项 {}", userId, OptionId);
 
         ChallengerPlayer currentPlayer = challengerPlayers.get(userId);
@@ -287,6 +292,7 @@ public class RoomGameState {
             currentPlayer.setSecondSelect(false);
         }
 
+        return currentPlayer.getTempSelectedCardInstances();
     }
 
     private void confirmSelect(Long userId) {
@@ -340,11 +346,36 @@ public class RoomGameState {
     }
 
     /**
-     * @return 对手 ID
+     * @return 通知玩家ID集合
      */
-    public Long readyBattle(String battlefield, Long userId) {
+    public Set<Long> readyBattle(String battlefield, Long userId) {
         log.info("用户 {} 确认准备，战场 {}", userId, battlefield);
-        return tempBattlefields.get(battlefield).readyBattle(userId, challengerPlayers);
+        Battlefield battlefield1 = tempBattlefields.get(battlefield);
+        Set<Long> userIds = new HashSet<>();
+        // TODO 准备后判断另一个玩家是否准备，是返回战斗结果，否返回另一个人 ID
+        // 直接把颁奖逻辑和判断下一回合的逻辑放这里
+        // 战斗计算过程很短，不用分两次传
+
+        Long opponentId = battlefield1.readyBattle(userId, challengerPlayers);
+        userIds.add(opponentId);
+        if (battlefield1.checkAllReady(challengerPlayers)) {
+            battlefield1.startBattle(challengerPlayers);
+            battlefield1.calculateBattle();
+            battlefield1.setEnd(true);
+            userIds.add(userId);
+            if (checkAllEnd()) {
+                log.info("{} 回合所有战斗结束", currentRound);
+                award();
+                nextRound();
+                // TODO 待定
+                userIds.addAll(challengerPlayers.keySet());
+            }
+        }
+        return userIds;
+    }
+
+    private boolean checkAllEnd() {
+        return tempBattlefields.values().stream().allMatch(Battlefield::isEnd);
     }
 
 //    endregion

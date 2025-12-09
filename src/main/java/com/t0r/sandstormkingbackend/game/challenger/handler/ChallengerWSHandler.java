@@ -8,6 +8,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.RoomGameState;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
@@ -31,17 +32,18 @@ public class ChallengerWSHandler {
     private ChallengerGameManager challengerGameManager;
 
     public MessageBroadcastTypeEnum handleMessage(GameMessage gameMessage, WebSocketSession session,
+                                                  Set<WebSocketSession> webSocketSessions,
                                                   User user, Long roomId) throws Exception {
         String type = gameMessage.getType();
         ChallengerMessageTypeEnum challengerMessageTypeEnum = ChallengerMessageTypeEnum.valueOf(type);
         switch (challengerMessageTypeEnum) {
             case INIT_GAME:
-                return handleInitGameMessage(gameMessage);
+                return handleInitGameMessage(gameMessage, webSocketSessions);
             case GET_PLAYER:
                 // TODO 先粗暴地让前端请求资源，后续再优化
                 return handleGetPlayerMessage(gameMessage, roomId, user.getId());
             case GET_BATTLEFIELD:
-                return handleGetBattlefieldMessage(gameMessage, roomId, user.getId());
+                return handleGetBattlefieldMessage(gameMessage, roomId);
             case BUILD_DECK:
                 return handleBuildDeckMessage(gameMessage, roomId, user.getId());
             case READY_BATTLE:
@@ -53,51 +55,62 @@ public class ChallengerWSHandler {
         return null;
     }
 
-    private MessageBroadcastTypeEnum handleGetBattlefieldMessage(GameMessage gameMessage, Long roomId, Long userId) {
+    private MessageBroadcastTypeEnum handleGetBattlefieldMessage(GameMessage gameMessage, Long roomId) {
+        RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
+
         String battlefieldName = gameMessage.getBody();
         // TODO 这一层所有方法有参数都要在这里做校验
         ThrowUtils.throwIf(battlefieldName == null, ErrorCode.PARAMS_ERROR, "请选择战斗场");
-        Battlefield battlefield = challengerGameManager.getBattlefield(roomId, battlefieldName);
+        Battlefield battlefield = roomGameState.getTempBattlefields().get(battlefieldName);
         gameMessage.setBody(JSONUtil.toJsonStr(battlefield));
         return MessageBroadcastTypeEnum.SELF;
     }
 
     private MessageBroadcastTypeEnum handleDiscardCardMessage(GameMessage gameMessage, Long roomId, Long userId) {
+        RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
+
         String body = gameMessage.getBody();
         Set<Integer> cardInstanceIds = new HashSet<>(JSONUtil.toList(body, Integer.class));
-        challengerGameManager.discardCardInstances(roomId, userId, cardInstanceIds);
+        roomGameState.discardCardInstances(userId, cardInstanceIds);
         return MessageBroadcastTypeEnum.SELF;
     }
 
     private MessageBroadcastTypeEnum handleGetPlayerMessage(GameMessage gameMessage, Long roomId, Long userId) {
+        RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
+
         // TODO 后续考虑优化一个 ChallengerPlayerVO
-        ChallengerPlayer challengerPlayer = challengerGameManager.getChallengerPlayer(roomId, userId);
+        ChallengerPlayer challengerPlayer = roomGameState.getChallengerPlayers().get(userId);
         gameMessage.setBody(JSONUtil.toJsonStr(challengerPlayer));
         return MessageBroadcastTypeEnum.SELF;
     }
 
+    // TODO 待定
     private MessageBroadcastTypeEnum handleReadyBattleMessage(GameMessage gameMessage, Long roomId, Long userId) {
+        RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
+
         String battlefield = gameMessage.getBody();
-        Long opponentId = challengerGameManager.readyBattle(roomId, userId, battlefield);
-        gameMessage.getUserIds().add(opponentId);
+        Set<Long> userIds = roomGameState.readyBattle(battlefield, userId);
+        gameMessage.setUserIds(userIds);
         return MessageBroadcastTypeEnum.CUSTOM;
     }
 
     private MessageBroadcastTypeEnum handleBuildDeckMessage(GameMessage gameMessage, Long roomId, Long userId) {
+        RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
+
         String body = gameMessage.getBody();
         BuildDeckRequest buildDeckRequest = JSONUtil.toBean(body, BuildDeckRequest.class);
         Integer optionId = buildDeckRequest.getOptionId();
         Set<Integer> selectedCardInstanceIds = buildDeckRequest.getSelectedCardInstanceIds();
         LinkedList<CardInstance> cardInstances =
-                challengerGameManager.buildCardInstances(roomId, userId, optionId, selectedCardInstanceIds);
+                roomGameState.buildCardInstances(userId, optionId, selectedCardInstanceIds);
         gameMessage.setBody(JSONUtil.toJsonStr(cardInstances));
         return MessageBroadcastTypeEnum.SELF;
     }
 
-    private MessageBroadcastTypeEnum handleInitGameMessage(GameMessage gameMessage) throws Exception {
+    private MessageBroadcastTypeEnum handleInitGameMessage(GameMessage gameMessage, Set<WebSocketSession> webSocketSessions) throws Exception {
         String body = gameMessage.getBody();
         InitGameRequest initGameRequest = JSONUtil.toBean(body, InitGameRequest.class);
-        Map<Integer, Card> cardMap = challengerGameManager.initGame(initGameRequest);
+        Map<Integer, Card> cardMap = challengerGameManager.initGame(initGameRequest, webSocketSessions);
         gameMessage.setBody(JSONUtil.toJsonStr(cardMap));
         return MessageBroadcastTypeEnum.ALL;
     }

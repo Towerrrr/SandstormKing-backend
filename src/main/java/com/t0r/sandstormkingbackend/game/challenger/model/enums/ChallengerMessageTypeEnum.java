@@ -12,7 +12,10 @@ public enum ChallengerMessageTypeEnum {
     GET_BATTLEFIELD("获取战场信息", "GET_BATTLEFIELD"),
     BUILD_DECK("构建牌组", "BUILD_DECK"),
     READY_BATTLE("准备战斗", "READY_BATTLE"),
-    DISCARD_CARD("弃牌", "DISCARD_CARD");
+    DISCARD_CARD("弃牌", "DISCARD_CARD"),
+    // 仅通知
+    // TODO 未实现
+    AWARD_AND_NEXT_ROUND("颁奖并进入下一回合", "AWARD_AND_NEXT_ROUND");
 
     private final String text;
 

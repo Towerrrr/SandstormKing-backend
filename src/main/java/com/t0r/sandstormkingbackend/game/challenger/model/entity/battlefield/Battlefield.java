@@ -27,6 +27,7 @@ public class Battlefield {
 
     LinkedList<Battle> battleList = new LinkedList<>();
 
+    boolean isEnd = false;
     Long winnerId;
 
     public Battlefield(String name, String currentRound, Map<Long, ChallengerPlayer> challengerPlayers) {
@@ -40,6 +41,13 @@ public class Battlefield {
     public Long readyBattle(Long userId, Map<Long, ChallengerPlayer> challengerPlayers) {
         halfBattlefieldMap.get(userId).setReady(true);
 
+        for (Long opponentId : halfBattlefieldMap.keySet()) {
+            if (!Objects.equals(opponentId, userId)) return opponentId;
+        }
+        return null;
+    }
+
+    public boolean checkAllReady(Map<Long, ChallengerPlayer> challengerPlayers) {
         boolean allReady = true;
         for (HalfBattlefield halfBattlefield : halfBattlefieldMap.values()) {
             if (!halfBattlefield.isReady()) {
@@ -47,18 +55,7 @@ public class Battlefield {
                 break;
             }
         }
-
-        if (allReady) {
-            new Thread(() -> {
-                startBattle(challengerPlayers);
-                calculateBattle();
-            }).start();
-        }
-
-        for (Long opponentId : halfBattlefieldMap.keySet()) {
-            if (!Objects.equals(opponentId, userId)) return opponentId;
-        }
-        return null;
+        return allReady;
     }
 
     /**

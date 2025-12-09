@@ -5,20 +5,21 @@ import cn.hutool.json.JSONUtil;
 import com.opencsv.CSVReader;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.*;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TotalPlayerCountEnum;
 import com.t0r.sandstormkingbackend.service.RoomService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.WebSocketSession;
 
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-
+@Getter
 @Slf4j
 @Component
 public class ChallengerGameManager {
@@ -37,45 +38,18 @@ public class ChallengerGameManager {
     public final static Map<Integer, List<Map<String, String>>> battlefieldArrangeMap = new HashMap<>();
 
     // 房间 ID -> RoomGameState
-    private final static Map<Long, RoomGameState> roomGameStateMap = new ConcurrentHashMap<>();
+    private final Map<Long, RoomGameState> roomGameStateMap = new ConcurrentHashMap<>();
 
     ChallengerGameManager() {
         loadCardMap();
         loadBattlefieldArrange();
     }
 
-    public void discardCardInstances(Long roomId, Long userId, Set<Integer> cardInstanceIds) {
-        roomGameStateMap.get(roomId).discardCardInstances(userId, cardInstanceIds);
-    }
-
-    public Battlefield getBattlefield(Long roomId, String battlefield) {
-        return roomGameStateMap.get(roomId).getTempBattlefields().get(battlefield);
-    }
-
-    public ChallengerPlayer getChallengerPlayer(Long roomId, Long userId) {
-        RoomGameState roomGameState = roomGameStateMap.get(roomId);
-        return roomGameState.getChallengerPlayers().get(userId);
-    }
-
-    public Map<Integer, Card> initGame(InitGameRequest initGameRequest) {
+    public Map<Integer, Card> initGame(InitGameRequest initGameRequest, Set<WebSocketSession> webSocketSessions) {
         Long roomId = initGameRequest.getRoomId();
-        roomGameStateMap.put(roomId, new RoomGameState(initGameRequest));
+        roomGameStateMap.put(roomId, new RoomGameState(initGameRequest, webSocketSessions));
         return cardMap;
     }
-
-    public LinkedList<CardInstance> buildCardInstances(Long roomId, Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
-        RoomGameState roomGameState = roomGameStateMap.get(roomId);
-        roomGameState.buildCardInstances(userId, OptionId, selectedCardInstanceIds);
-        return roomGameState.getChallengerPlayers().get(userId).getTempSelectedCardInstances();
-    }
-
-    /**
-     * @return 对手 ID
-     */
-    public Long readyBattle(Long roomId, Long userId, String battlefield) {
-        return roomGameStateMap.get(roomId).readyBattle(battlefield, userId);
-    }
-
 
     public void loadCardMap() {
         log.info("加载卡牌数据");
