@@ -1,5 +1,6 @@
 package com.t0r.sandstormkingbackend.game.challenger.handler;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
@@ -11,6 +12,8 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlaye
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.RoomGameState;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.vo.BattlefieldVO;
+import com.t0r.sandstormkingbackend.game.challenger.model.vo.RoomGameStateVO;
 import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
 import com.t0r.sandstormkingbackend.model.entity.User;
@@ -44,6 +47,8 @@ public class ChallengerWSHandler {
                 return handleGetPlayerMessage(gameMessage, roomId, user.getId());
             case GET_BATTLEFIELD:
                 return handleGetBattlefieldMessage(gameMessage, roomId);
+            case GET_ROOM_STATE:
+                return handleGetRoomStateMessage(gameMessage, roomId);
             case BUILD_DECK:
                 return handleBuildDeckMessage(gameMessage, roomId, user.getId());
             case READY_BATTLE:
@@ -55,6 +60,13 @@ public class ChallengerWSHandler {
         return null;
     }
 
+    private MessageBroadcastTypeEnum handleGetRoomStateMessage(GameMessage gameMessage, Long roomId) {
+        RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
+        RoomGameStateVO roomGameStateVO = BeanUtil.copyProperties(roomGameState, RoomGameStateVO.class);
+        gameMessage.setBody(JSONUtil.toJsonStr(roomGameStateVO));
+        return MessageBroadcastTypeEnum.SELF;
+    }
+
     private MessageBroadcastTypeEnum handleGetBattlefieldMessage(GameMessage gameMessage, Long roomId) {
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
 
@@ -62,7 +74,7 @@ public class ChallengerWSHandler {
         // TODO 这一层所有方法有参数都要在这里做校验
         ThrowUtils.throwIf(battlefieldName == null, ErrorCode.PARAMS_ERROR, "请选择战斗场");
         Battlefield battlefield = roomGameState.getTempBattlefields().get(battlefieldName);
-        gameMessage.setBody(JSONUtil.toJsonStr(battlefield));
+        gameMessage.setBody(JSONUtil.toJsonStr(new BattlefieldVO(battlefield)));
         return MessageBroadcastTypeEnum.SELF;
     }
 

@@ -34,11 +34,13 @@ public class Battlefield {
         this.name = name;
         for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
             String playerBattlefield = challengerPlayer.getBattlefieldSchedules().get(currentRound);
-            halfBattlefieldMap.put(challengerPlayer.getUserId(), new HalfBattlefield());
+            if (playerBattlefield.equals(this.name)) {
+                halfBattlefieldMap.put(challengerPlayer.getUserId(), new HalfBattlefield());
+            }
         }
     }
 
-    public Long readyBattle(Long userId, Map<Long, ChallengerPlayer> challengerPlayers) {
+    public Long readyBattle(Long userId) {
         halfBattlefieldMap.get(userId).setReady(true);
 
         for (Long opponentId : halfBattlefieldMap.keySet()) {
@@ -47,7 +49,7 @@ public class Battlefield {
         return null;
     }
 
-    public boolean checkAllReady(Map<Long, ChallengerPlayer> challengerPlayers) {
+    public boolean checkAllReady() {
         boolean allReady = true;
         for (HalfBattlefield halfBattlefield : halfBattlefieldMap.values()) {
             if (!halfBattlefield.isReady()) {
@@ -99,7 +101,7 @@ public class Battlefield {
         // 倒序排放
         List<Map.Entry<Long, Integer>> sortedEntries = cupRoundSumMap.entrySet()
                 .stream()
-                .sorted(Map.Entry.<Long, Integer>comparingByValue(Comparator.reverseOrder()))
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .collect(Collectors.toList());
 
         Map.Entry<Long, Integer> first = sortedEntries.get(0);
@@ -123,7 +125,6 @@ public class Battlefield {
     }
 
     public void calculateBattle() {
-        Long[] playerIds = new Long[]{startPlayerId, elsePlayerId};
         HalfBattlefield[] halfBattlefields = new HalfBattlefield[]{
                 halfBattlefieldMap.get(startPlayerId),
                 halfBattlefieldMap.get(elsePlayerId)
@@ -138,7 +139,7 @@ public class Battlefield {
         int defenderIdx = 1;
 
         Integer defenderPower = 0;
-        Integer attackerPower = 0;
+        Integer attackerPower;
 
         // TODO 判断有人战斗开始直接弃光手牌？
 
@@ -148,8 +149,8 @@ public class Battlefield {
         battle.getAttacker().add(attackerCard);
         attackerPower = attackerCard.getCurrentPower();
 
-        // 进行到最后可能先没牌的玩家是赢的
-        while (!handZones[defenderIdx].isEmpty() || !handZones[attackerIdx].isEmpty()) {
+        // 进行到最后可能先没牌的玩家是赢的，两个人都没牌的情况下可能还要进一次循环
+        while (true) {
             // 进攻方出牌，直到攻击力 >= 防守力 或手牌用完
             while (attackerPower < defenderPower && !handZones[attackerIdx].isEmpty()) {
                 attackerCard = handZones[attackerIdx].removeFirst();

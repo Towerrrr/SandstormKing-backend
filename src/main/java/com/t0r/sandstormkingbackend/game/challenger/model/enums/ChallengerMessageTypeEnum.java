@@ -10,6 +10,7 @@ public enum ChallengerMessageTypeEnum {
     END_GAME("结束游戏", "END_GAME"),
     GET_PLAYER("获取玩家信息", "GET_PLAYER"),
     GET_BATTLEFIELD("获取战场信息", "GET_BATTLEFIELD"),
+    GET_ROOM_STATE("获取房间状态", "GET_ROOM_STATE"),
     BUILD_DECK("构建牌组", "BUILD_DECK"),
     READY_BATTLE("准备战斗", "READY_BATTLE"),
     DISCARD_CARD("弃牌", "DISCARD_CARD"),

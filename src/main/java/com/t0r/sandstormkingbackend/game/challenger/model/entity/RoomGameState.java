@@ -356,9 +356,9 @@ public class RoomGameState {
         // 直接把颁奖逻辑和判断下一回合的逻辑放这里
         // 战斗计算过程很短，不用分两次传
 
-        Long opponentId = battlefield1.readyBattle(userId, challengerPlayers);
+        Long opponentId = battlefield1.readyBattle(userId);
         userIds.add(opponentId);
-        if (battlefield1.checkAllReady(challengerPlayers)) {
+        if (battlefield1.checkAllReady()) {
             battlefield1.startBattle(challengerPlayers);
             battlefield1.calculateBattle();
             battlefield1.setEnd(true);
@@ -419,7 +419,7 @@ public class RoomGameState {
         ).getValue();
 
         resetBattlefield();
-        log.info("房间 {} 进入第 {} 轮", roomId, currentRound);
+        log.info("房间 {} 进入第 {} 轮", roomId, this.currentRound);
     }
 
 
