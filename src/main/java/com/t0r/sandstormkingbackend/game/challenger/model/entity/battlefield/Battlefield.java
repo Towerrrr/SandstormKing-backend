@@ -4,6 +4,7 @@ import com.t0r.sandstormkingbackend.Util.MyListUtil;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CupInstance;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.PhaseEnum;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,8 @@ public class Battlefield {
 
     String name;
 
+    String currentPhase;
+
     Map<Long, HalfBattlefield> halfBattlefieldMap = new HashMap<>();
 
     Long startPlayerId;
@@ -32,6 +35,7 @@ public class Battlefield {
 
     public Battlefield(String name, String currentRound, Map<Long, ChallengerPlayer> challengerPlayers) {
         this.name = name;
+        this.currentPhase = PhaseEnum.BUILD.getValue();
         for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
             String playerBattlefield = challengerPlayer.getBattlefieldSchedules().get(currentRound);
             if (playerBattlefield.equals(this.name)) {
@@ -65,6 +69,8 @@ public class Battlefield {
      */
     public void startBattle(Map<Long, ChallengerPlayer> challengerPlayers) {
         log.info("开始战斗，战场 {}", name);
+
+        this.currentPhase = PhaseEnum.BATTLE.getValue();
 
         for (Map.Entry<Long, HalfBattlefield> entry : halfBattlefieldMap.entrySet()) {
             Long userId = entry.getKey();

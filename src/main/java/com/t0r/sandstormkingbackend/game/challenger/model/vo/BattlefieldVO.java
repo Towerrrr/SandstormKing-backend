@@ -5,7 +5,6 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Bat
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.HalfBattlefield;
 import lombok.Data;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -13,6 +12,8 @@ import java.util.Map;
 public class BattlefieldVO {
 
     String name;
+
+    String currentPhase;
 
     Map<Long, HalfBattlefield> halfBattlefieldMap;
 
@@ -26,6 +27,7 @@ public class BattlefieldVO {
 
     public BattlefieldVO(Battlefield battlefield) {
         this.name = battlefield.getName();
+        this.currentPhase = battlefield.getCurrentPhase();
         this.halfBattlefieldMap = battlefield.getHalfBattlefieldMap();
         this.startPlayerId = String.valueOf(battlefield.getStartPlayerId());
         this.elsePlayerId = String.valueOf(battlefield.getElsePlayerId());

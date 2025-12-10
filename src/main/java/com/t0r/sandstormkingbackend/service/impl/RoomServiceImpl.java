@@ -100,6 +100,7 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public boolean quitRoom(Long roomId, User loginUser) {
+        // TODO 用户直接关闭页面时只会断开ws连接，但是在redis中还保留着用户信息
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
         ThrowUtils.throwIf(roomId == null || roomId <= 0, ErrorCode.PARAMS_ERROR, "房间ID无效");
 

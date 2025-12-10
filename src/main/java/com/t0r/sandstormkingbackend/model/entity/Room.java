@@ -15,6 +15,8 @@ public class Room {
     public final static String MAX_PLAYERS = "maxPlayers";
     public final static String CREATED_TIME = "createdTime";
 
+    // TODO 加一个状态字段：开始游戏后不能让人加入
+
     private Long id;
 
     private Long ownerId;

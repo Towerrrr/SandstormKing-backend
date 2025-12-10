@@ -78,8 +78,9 @@ public class GamePlayHandler extends TextWebSocketHandler {
 
         switch (wsMessageTypeEnum) {
             case ROOM_STATE_CHANGED:
-            case START_GAME:
                 BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
+                break;
+            case START_GAME:
                 challengerWSHandler.handleMessage(wsMessage.getGameMessage(), session, webSocketSessions, user, roomId);
                 BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
                 break;
