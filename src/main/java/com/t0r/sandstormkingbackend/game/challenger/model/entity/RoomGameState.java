@@ -1,15 +1,25 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
+import cn.hutool.Hutool;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.Util.MyListUtil;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.StartBattleResponse;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battle;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
+import com.t0r.sandstormkingbackend.handler.BroadcastUtil;
+import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
+import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
+import com.t0r.sandstormkingbackend.model.entity.User;
+import com.t0r.sandstormkingbackend.model.enums.WSMessageTypeEnum;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -39,7 +49,8 @@ public class RoomGameState {
 
     private boolean hasBot;
 
-    private Set<WebSocketSession> playerSessions = new HashSet<>();
+    // key: 玩家 ID
+    private Map<Long, WebSocketSession> sessionMap = new ConcurrentHashMap<>();
 
     // 回合数 -> 抽卡计划
     private Map<String, DrawSchedule> drawSchedules = new HashMap<>();
@@ -90,8 +101,7 @@ public class RoomGameState {
 
         this.version = initGameRequest.getVersion();
         loadDrawSchedule();
-
-        this.playerSessions = webSocketSessions;
+        initSessionMap(webSocketSessions);
 
         // 变化域
         this.currentRound = RoundEnum.getFirstRound().getValue();
@@ -99,6 +109,18 @@ public class RoomGameState {
         initCupInstance();
         initCardInstance();
         resetBattlefield();
+    }
+
+    public void initSessionMap(Set<WebSocketSession> webSocketSessions) {
+        log.info("初始化房间 {} 的 WebSocketSession 映射", roomId);
+
+        if (CollUtil.isNotEmpty(webSocketSessions)) {
+            for (WebSocketSession session : webSocketSessions) {
+                User user = (User) session.getAttributes().get("user");
+                Long userId = user.getId();
+                this.sessionMap.put(userId, session);
+            }
+        }
     }
 
     // TODO 后续先全部加载到Handler再从那边取
@@ -345,33 +367,55 @@ public class RoomGameState {
         tempSelectedCardInstances.clear();
     }
 
-    /**
-     * @return 通知玩家ID集合
-     */
-    public Set<Long> readyBattle(String battlefield, Long userId) {
+    public void readyBattle(String battlefield, Long userId) {
         log.info("用户 {} 确认准备，战场 {}", userId, battlefield);
         Battlefield battlefield1 = tempBattlefields.get(battlefield);
-        Set<Long> userIds = new HashSet<>();
-        // TODO 准备后判断另一个玩家是否准备，是返回战斗结果，否返回另一个人 ID
-        // 直接把颁奖逻辑和判断下一回合的逻辑放这里
-        // 战斗计算过程很短，不用分两次传
 
         Long opponentId = battlefield1.readyBattle(userId);
-        userIds.add(opponentId);
         if (battlefield1.checkAllReady()) {
             battlefield1.startBattle(challengerPlayers);
             battlefield1.calculateBattle();
+            Long startPlayerId = battlefield1.getStartPlayerId();
+            String startWay = battlefield1.getStartWay();
+            LinkedList<Battle> battleList = battlefield1.getBattleList();
+            StartBattleResponse startBattleResponse = new StartBattleResponse(startPlayerId, startWay, battleList);
+
+            Set<WebSocketSession> sessions = new HashSet<>();
+            sessions.add(sessionMap.get(userId));
+            sessions.add(sessionMap.get(opponentId));
+            BroadcastUtil.sendMessage(
+                    sessions,
+                    new WSMessage(
+                            WSMessageTypeEnum.CHALLENGER.getValue(),
+                            null,
+                            new GameMessage(
+                                    ChallengerMessageTypeEnum.WAIT_OPPONENT_READY.getValue(),
+                                    null, null, JSONUtil.toJsonStr(startBattleResponse))
+                    ));
+
             battlefield1.setEnd(true);
-            userIds.add(userId);
             if (checkAllEnd()) {
                 log.info("{} 回合所有战斗结束", currentRound);
                 award();
                 nextRound();
-                // TODO 待定
-                userIds.addAll(challengerPlayers.keySet());
             }
+        } else {
+            log.info("用户 {} 确认准备，等待对手 {}", userId, opponentId);
+            BroadcastUtil.sendMessage(sessionMap.get(userId), new WSMessage(
+                    WSMessageTypeEnum.CHALLENGER.getValue(),
+                    null,
+                    new GameMessage(
+                            ChallengerMessageTypeEnum.WAIT_OPPONENT_READY.getValue(),
+                            null, null, null)
+            ));
+            BroadcastUtil.sendMessage(sessionMap.get(opponentId), new WSMessage(
+                    WSMessageTypeEnum.CHALLENGER.getValue(),
+                    null,
+                    new GameMessage(
+                            ChallengerMessageTypeEnum.WAIT_YOU_READY.getValue(),
+                            null, null, null)
+            ));
         }
-        return userIds;
     }
 
     private boolean checkAllEnd() {

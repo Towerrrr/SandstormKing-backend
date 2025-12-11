@@ -5,6 +5,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CupInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.PhaseEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.StartWayEnum;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class Battlefield {
 
     Long startPlayerId;
     Long elsePlayerId;
+    String startWay;
 
     LinkedList<Battle> battleList = new LinkedList<>();
 
@@ -115,8 +117,8 @@ public class Battlefield {
 
         // 如果两个玩家的奖杯回合数相同，则随机选择一个玩家
         if (first.getValue().equals(second.getValue())) {
-            // TODO 随机选择时告知前端
             log.info("两个玩家的奖杯回合数相同，随机选择一个玩家");
+            this.startWay = StartWayEnum.RANDOM.getValue();
             if (Math.random() < 0.5) {
                 startPlayerId = first.getKey();
                 elsePlayerId = second.getKey();
@@ -125,6 +127,7 @@ public class Battlefield {
                 elsePlayerId = first.getKey();
             }
         } else {
+            this.startWay = StartWayEnum.NORMAL.getValue();
             startPlayerId = first.getKey();
             elsePlayerId = second.getKey();
         }

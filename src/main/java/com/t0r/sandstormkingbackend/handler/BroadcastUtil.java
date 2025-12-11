@@ -14,6 +14,24 @@ import java.util.Set;
 
 public class BroadcastUtil {
 
+    public static void sendMessage(WebSocketSession session, WSMessage wsMessage) {
+        if (session != null && session.isOpen()) {
+            try {
+                session.sendMessage(buildTextMessage(wsMessage));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static void sendMessage(Set<WebSocketSession> sessionSet, WSMessage wsMessage) {
+        try {
+            broadcastExclude(sessionSet, wsMessage, null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static void sendMessage(MessageBroadcastTypeEnum messageBroadcastTypeEnum,
                                    Set<WebSocketSession> sessionSet,
                                    WSMessage wsMessage,
@@ -30,6 +48,8 @@ public class BroadcastUtil {
                 break;
             case CUSTOM:
                 broadcastCustom(sessionSet, wsMessage);
+                break;
+            default:
                 break;
         }
     }

@@ -85,9 +85,9 @@ public class GamePlayHandler extends TextWebSocketHandler {
                 BroadcastUtil.sendMessage(MessageBroadcastTypeEnum.ALL, playerSessions.get(roomId), wsMessage, session);
                 break;
             case CHALLENGER:
-                MessageBroadcastTypeEnum messageBroadcastTypeEnum2 =
+                MessageBroadcastTypeEnum messageBroadcastTypeEnum =
                         challengerWSHandler.handleMessage(wsMessage.getGameMessage(), session, webSocketSessions, user, roomId);
-                BroadcastUtil.sendMessage(messageBroadcastTypeEnum2, playerSessions.get(roomId), wsMessage, session);
+                BroadcastUtil.sendMessage(messageBroadcastTypeEnum, playerSessions.get(roomId), wsMessage, session);
                 break;
             default:
                 wsMessage.setType(WSMessageTypeEnum.ERROR.getValue());

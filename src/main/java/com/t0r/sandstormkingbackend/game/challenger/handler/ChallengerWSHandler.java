@@ -52,7 +52,7 @@ public class ChallengerWSHandler {
             case BUILD_DECK:
                 return handleBuildDeckMessage(gameMessage, roomId, user.getId());
             case READY_BATTLE:
-                return handleReadyBattleMessage(gameMessage, roomId, user.getId());
+                handleReadyBattleMessage(gameMessage, roomId, user.getId());
             case DISCARD_CARD:
                 // 前端在开战前将之前所有丢弃的卡牌保存，到开战前才调用丢弃api
                 return handleDiscardCardMessage(gameMessage, roomId, user.getId());
@@ -96,14 +96,10 @@ public class ChallengerWSHandler {
         return MessageBroadcastTypeEnum.SELF;
     }
 
-    // TODO 待定
-    private MessageBroadcastTypeEnum handleReadyBattleMessage(GameMessage gameMessage, Long roomId, Long userId) {
+    private void handleReadyBattleMessage(GameMessage gameMessage, Long roomId, Long userId) {
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
-
         String battlefield = gameMessage.getBody();
-        Set<Long> userIds = roomGameState.readyBattle(battlefield, userId);
-        gameMessage.setUserIds(userIds);
-        return MessageBroadcastTypeEnum.CUSTOM;
+        roomGameState.readyBattle(battlefield, userId);
     }
 
     private MessageBroadcastTypeEnum handleBuildDeckMessage(GameMessage gameMessage, Long roomId, Long userId) {

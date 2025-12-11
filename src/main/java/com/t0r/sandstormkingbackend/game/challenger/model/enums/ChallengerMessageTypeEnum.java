@@ -15,6 +15,9 @@ public enum ChallengerMessageTypeEnum {
     READY_BATTLE("准备战斗", "READY_BATTLE"),
     DISCARD_CARD("弃牌", "DISCARD_CARD"),
     // 仅通知
+    WAIT_OPPONENT_READY("等待对手准备", "WAIT_OPPONENT_READY"),
+    WAIT_YOU_READY("等待你准备", "WAIT_YOU_READY"),
+    START_BATTLE("开始战斗", "START_BATTLE"),
     // TODO 未实现
     AWARD_AND_NEXT_ROUND("颁奖并进入下一回合", "AWARD_AND_NEXT_ROUND");
 

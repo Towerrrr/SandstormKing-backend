@@ -1,11 +1,13 @@
 package com.t0r.sandstormkingbackend.model.dto.game;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @Data
+@AllArgsConstructor
 public class GameMessage {
 
     private String type;
