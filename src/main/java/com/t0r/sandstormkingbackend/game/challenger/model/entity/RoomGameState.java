@@ -389,7 +389,7 @@ public class RoomGameState {
                             WSMessageTypeEnum.CHALLENGER.getValue(),
                             null,
                             new GameMessage(
-                                    ChallengerMessageTypeEnum.WAIT_OPPONENT_READY.getValue(),
+                                    ChallengerMessageTypeEnum.START_BATTLE.getValue(),
                                     null, null, JSONUtil.toJsonStr(startBattleResponse))
                     ));
 

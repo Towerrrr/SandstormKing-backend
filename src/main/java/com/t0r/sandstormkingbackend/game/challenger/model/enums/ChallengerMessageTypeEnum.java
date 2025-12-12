@@ -12,9 +12,10 @@ public enum ChallengerMessageTypeEnum {
     GET_BATTLEFIELD("获取战场信息", "GET_BATTLEFIELD"),
     GET_ROOM_STATE("获取房间状态", "GET_ROOM_STATE"),
     BUILD_DECK("构建牌组", "BUILD_DECK"),
-    READY_BATTLE("准备战斗", "READY_BATTLE"),
     DISCARD_CARD("弃牌", "DISCARD_CARD"),
-    // 仅通知
+    // 仅接收
+    READY_BATTLE("准备战斗", "READY_BATTLE"),
+    // 仅发送
     WAIT_OPPONENT_READY("等待对手准备", "WAIT_OPPONENT_READY"),
     WAIT_YOU_READY("等待你准备", "WAIT_YOU_READY"),
     START_BATTLE("开始战斗", "START_BATTLE"),

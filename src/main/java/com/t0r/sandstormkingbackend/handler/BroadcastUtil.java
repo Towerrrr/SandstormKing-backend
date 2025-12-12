@@ -36,6 +36,8 @@ public class BroadcastUtil {
                                    Set<WebSocketSession> sessionSet,
                                    WSMessage wsMessage,
                                    WebSocketSession selfSession) throws Exception {
+        if (messageBroadcastTypeEnum == null) return;
+
         switch (messageBroadcastTypeEnum) {
             case ALL:
                 broadcastExclude(sessionSet, wsMessage, null);
