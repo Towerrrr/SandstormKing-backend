@@ -13,6 +13,8 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.RoomGameState;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.vo.BattlefieldVO;
+import com.t0r.sandstormkingbackend.game.challenger.model.vo.ChallengerPlayerSelf;
+import com.t0r.sandstormkingbackend.game.challenger.model.vo.ChallengerPlayerVO;
 import com.t0r.sandstormkingbackend.game.challenger.model.vo.RoomGameStateVO;
 import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
@@ -45,6 +47,8 @@ public class ChallengerWSHandler {
             case GET_PLAYER:
                 // TODO 先粗暴地让前端请求资源，后续再优化
                 return handleGetPlayerMessage(gameMessage, roomId, user.getId());
+            case GET_PLAYER_VO:
+                return handleGetPlayerVOMessage(gameMessage, roomId);
             case GET_BATTLEFIELD:
                 return handleGetBattlefieldMessage(gameMessage, roomId);
             case GET_ROOM_STATE:
@@ -93,7 +97,16 @@ public class ChallengerWSHandler {
 
         // TODO 后续考虑优化一个 ChallengerPlayerVO
         ChallengerPlayer challengerPlayer = roomGameState.getChallengerPlayers().get(userId);
-        gameMessage.setBody(JSONUtil.toJsonStr(challengerPlayer));
+        gameMessage.setBody(JSONUtil.toJsonStr(new ChallengerPlayerSelf(challengerPlayer)));
+        return MessageBroadcastTypeEnum.SELF;
+    }
+
+    private MessageBroadcastTypeEnum handleGetPlayerVOMessage(GameMessage gameMessage, Long roomId) {
+        RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
+
+        long userId = Long.parseLong(gameMessage.getBody());
+        ChallengerPlayer challengerPlayer = roomGameState.getChallengerPlayers().get(userId);
+        gameMessage.setBody(JSONUtil.toJsonStr(new ChallengerPlayerVO(challengerPlayer)));
         return MessageBroadcastTypeEnum.SELF;
     }
 
