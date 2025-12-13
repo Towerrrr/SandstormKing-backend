@@ -23,6 +23,7 @@ public class ChallengerPlayerVO {
     public ChallengerPlayerVO(ChallengerPlayer challengerPlayer) {
         this.userId = challengerPlayer.getUserId().toString();
         this.battlefieldSchedules = challengerPlayer.getBattlefieldSchedules();
+        this.cupInstanceRounds = new ArrayList<>();
         challengerPlayer.getCupInstances().forEach(
                 cupInstance -> this.cupInstanceRounds.add(Integer.valueOf(cupInstance.getRound())));
         this.extraFanCount = challengerPlayer.getExtraFanCount();
