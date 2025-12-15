@@ -10,6 +10,4 @@ public class CardInstance {
 
     private Integer cardId;
 
-    private Integer currentPower;
-
 }

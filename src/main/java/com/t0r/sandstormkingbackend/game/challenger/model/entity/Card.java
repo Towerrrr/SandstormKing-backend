@@ -1,5 +1,6 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.buff.BuffConfigParam;
 import lombok.Data;
 
 @Data
@@ -21,5 +22,9 @@ public class Card {
     private String countDescription;
 
     private Integer count;
+
+    private String timeRange;
+
+    private BuffConfigParam buffConfigParam;
 
 }

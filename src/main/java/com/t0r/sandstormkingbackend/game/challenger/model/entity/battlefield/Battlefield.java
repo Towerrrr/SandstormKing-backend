@@ -1,18 +1,24 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield;
 
 import com.t0r.sandstormkingbackend.Util.MyListUtil;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CupInstance;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.buff.Buff;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.buff.BuffCallParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.PhaseEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.StartWayEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager.cardMap;
 import static com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.HalfBattlefield.MAX_REST_ZONE_SIZE;
 
 @Data
@@ -146,9 +152,14 @@ public class Battlefield {
 
         int attackerIdx = 0;
         int defenderIdx = 1;
-
-        Integer defenderPower = 0;
+        Power defenderPower = new Power(0);
         Integer attackerPower;
+        // 休息区 BUFF
+        List<Consumer<BuffCallParam>> startRestBuffs = new ArrayList<>();
+        List<Consumer<BuffCallParam>> elseRestBuffs = new ArrayList<>();
+        // 下一张卡 BUFF
+        Consumer<BuffCallParam> startNextCardBuff = null;
+        Consumer<BuffCallParam> elseNextCardBuff = null;
 
         // TODO 判断有人战斗开始直接弃光手牌？
 
@@ -156,19 +167,46 @@ public class Battlefield {
         Battle battle = new Battle();
         CardInstance attackerCard = handZones[attackerIdx].removeFirst();
         battle.getAttacker().add(attackerCard);
-        attackerPower = attackerCard.getCurrentPower();
+        attackerPower = cardMap.get(attackerCard.getCardId()).getBasePower();
 
         // 进行到最后可能先没牌的玩家是赢的，两个人都没牌的情况下可能还要进一次循环
         while (true) {
+            if (battle.getDefender() != null) { // 跳过第一次攻击
+                // 给防守方上 休息区 BUFF
+                List<Consumer<BuffCallParam>> restBuffs =
+                        defenderIdx == 0 ? startRestBuffs : elseRestBuffs;
+                BuffCallParam buffCallParam =
+                        new BuffCallParam(
+                                TimeRangeEnum.CONTROL_FLAG.getValue(),
+                                defenderPower, cardMap.get(battle.getDefender().getCardId()));
+                for (Consumer<BuffCallParam> restBuff : restBuffs) {
+                    restBuff.accept(buffCallParam);
+                }
+            }
+
             // 进攻方出牌，直到攻击力 >= 防守力 或手牌用完
-            while (attackerPower < defenderPower && !handZones[attackerIdx].isEmpty()) {
+            while (attackerPower < Objects.requireNonNull(defenderPower).getValue() &&
+                    !handZones[attackerIdx].isEmpty()) {
                 attackerCard = handZones[attackerIdx].removeFirst();
-                attackerPower += attackerCard.getCurrentPower();
+                Power tempAttackerPower = new Power(cardMap.get(attackerCard.getCardId()).getBasePower());
+
+                // 给进攻方上 休息区 BUFF
+                List<Consumer<BuffCallParam>> restBuffs =
+                        attackerIdx == 0 ? startRestBuffs : elseRestBuffs;
+                BuffCallParam buffCallParam =
+                        new BuffCallParam(
+                                TimeRangeEnum.ATTACK.getValue(),
+                                tempAttackerPower, cardMap.get(attackerCard.getCardId()));
+                for (Consumer<BuffCallParam> restBuff : restBuffs) {
+                    restBuff.accept(buffCallParam);
+                }
+
+                attackerPower += tempAttackerPower.getValue();
                 battle.getAttacker().add(attackerCard);
             }
             battleList.add(battle);
             // 进攻方手牌耗尽攻击力依旧不足
-            if (attackerPower < defenderPower) {
+            if (attackerPower < defenderPower.getValue()) {
                 winnerId = defenderIdx == 0 ? startPlayerId : elsePlayerId;
                 log.info("战斗结束，进攻方无多余手牌，胜利者为 {}", winnerId);
                 break;
@@ -180,9 +218,16 @@ public class Battlefield {
                 LinkedList<CardInstance> attacker = descendingIterator.next().getAttacker();
 
                 for (CardInstance cardInstance : attacker) {
-                    Map<Integer, List<CardInstance>> restZone = halfBattlefields[defenderIdx].getRestZone();
-                    restZone.putIfAbsent(cardInstance.getCardId(), new ArrayList<>());
-                    restZone.get(cardInstance.getCardId()).add(cardInstance);
+                    Map<String, List<CardInstance>> restZone = halfBattlefields[defenderIdx].getRestZone();
+                    Card card = cardMap.get(cardInstance.getId());
+                    if (card.getTimeRange().equals(TimeRangeEnum.REST.getValue())) { // "在休息区" 技能
+                        List<Consumer<BuffCallParam>> restBuffs =
+                                attackerIdx == 0 ? startRestBuffs : elseRestBuffs;
+                        restBuffs.add(new Buff(card));
+                    }
+
+                    restZone.putIfAbsent(card.getName(), new ArrayList<>());
+                    restZone.get(card.getName()).add(cardInstance);
                     if (restZone.size() > MAX_REST_ZONE_SIZE) {
                         winnerId = attackerIdx == 0 ? startPlayerId : elsePlayerId;
                         battleList.add(battle);
@@ -197,7 +242,7 @@ public class Battlefield {
                 CardInstance lastAttacker = battle.getAttacker().getLast();
                 battle = new Battle();
                 battle.setDefender(lastAttacker);
-                defenderPower = lastAttacker.getCurrentPower();
+                defenderPower.setValue(cardMap.get(lastAttacker.getCardId()).getBasePower());
                 attackerPower = 0;
             }
 
