@@ -146,18 +146,18 @@ public class Battlefield {
                 halfBattlefieldMap.get(elsePlayerId)
         };
         // 0: 当前防守方, 1: 当前进攻方
-        LinkedList<CardInstance>[] handZones = new LinkedList[]{
+        List<LinkedList<CardInstance>> handZones = Arrays.asList(
                 halfBattlefields[0].getHandZone(),
                 halfBattlefields[1].getHandZone()
-        };
-        List<Consumer<BuffCallParam>>[] restBuffsArray = new List[]{
+        );
+        List<List<Consumer<BuffCallParam>>> restBuffsArray = Arrays.asList(
                 halfBattlefields[0].getRestBuffs(),
                 halfBattlefields[1].getRestBuffs()
-        };
-        Consumer<BuffCallParam>[] nextBuffs = new Consumer[]{
+        );
+        List<Consumer<BuffCallParam>> nextBuffs = Arrays.asList(
                 halfBattlefields[0].getNextBuff(),
                 halfBattlefields[1].getNextBuff()
-        };
+        );
 
         int attackerIdx = 0;
         int defenderIdx = 1;
@@ -168,7 +168,7 @@ public class Battlefield {
 
         // 最开始进攻方先放一张牌
         Battle battle = new Battle();
-        CardInstance attackerCard = handZones[attackerIdx].removeFirst();
+        CardInstance attackerCard = handZones.get(attackerIdx).removeFirst();
         battle.getAttacker().add(attackerCard);
         attackerPower = cardMap.get(attackerCard.getCardId()).getBasePower();
 
@@ -180,15 +180,15 @@ public class Battlefield {
                         new BuffCallParam(
                                 TimeRangeEnum.CONTROL_FLAG.getValue(),
                                 defenderPower, cardMap.get(battle.getDefender().getCardId()));
-                for (Consumer<BuffCallParam> restBuff : restBuffsArray[defenderIdx]) {
+                for (Consumer<BuffCallParam> restBuff : restBuffsArray.get(defenderIdx)) {
                     restBuff.accept(buffCallParam);
                 }
             }
 
             // 进攻方出牌，直到攻击力 >= 防守力 或手牌用完
             while (attackerPower < Objects.requireNonNull(defenderPower).getValue() &&
-                    !handZones[attackerIdx].isEmpty()) {
-                attackerCard = handZones[attackerIdx].removeFirst();
+                    !handZones.get(attackerIdx).isEmpty()) {
+                attackerCard = handZones.get(attackerIdx).removeFirst();
                 Power tempAttackerPower = new Power(cardMap.get(attackerCard.getCardId()).getBasePower());
 
                 // 给进攻方上 休息区 BUFF
@@ -196,10 +196,10 @@ public class Battlefield {
                         new BuffCallParam(
                                 TimeRangeEnum.ATTACK.getValue(),
                                 tempAttackerPower, cardMap.get(attackerCard.getCardId()));
-                for (Consumer<BuffCallParam> restBuff : restBuffsArray[attackerIdx]) {
+                for (Consumer<BuffCallParam> restBuff : restBuffsArray.get(attackerIdx)) {
                     restBuff.accept(buffCallParam);
                 }
-                nextBuffs[attackerIdx].accept(buffCallParam);
+                nextBuffs.get(attackerIdx).accept(buffCallParam);
 
                 // TODO “下一张卡” BUFF 技能，要结合卡的 timeRange
 
@@ -223,7 +223,7 @@ public class Battlefield {
                     Map<String, List<CardInstance>> restZone = halfBattlefields[defenderIdx].getRestZone();
                     Card card = cardMap.get(cardInstance.getId());
                     if (card.getBuffType().equals(BuffTypeEnum.REST.getValue())) { // "在休息区" 技能
-                        restBuffsArray[defenderIdx].add(new Buff(card));
+                        restBuffsArray.get(defenderIdx).add(new Buff(card));
                     }
 
                     restZone.putIfAbsent(card.getName(), new ArrayList<>());
