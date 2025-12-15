@@ -7,6 +7,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlaye
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CupInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.buff.Buff;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.buff.BuffCallParam;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.buff.BuffTypeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.PhaseEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.StartWayEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
@@ -149,17 +150,19 @@ public class Battlefield {
                 halfBattlefields[0].getHandZone(),
                 halfBattlefields[1].getHandZone()
         };
+        List<Consumer<BuffCallParam>>[] restBuffsArray = new List[]{
+                halfBattlefields[0].getRestBuffs(),
+                halfBattlefields[1].getRestBuffs()
+        };
+        Consumer<BuffCallParam>[] nextBuffs = new Consumer[]{
+                halfBattlefields[0].getNextBuff(),
+                halfBattlefields[1].getNextBuff()
+        };
 
         int attackerIdx = 0;
         int defenderIdx = 1;
         Power defenderPower = new Power(0);
         Integer attackerPower;
-        // 休息区 BUFF
-        List<Consumer<BuffCallParam>> startRestBuffs = new ArrayList<>();
-        List<Consumer<BuffCallParam>> elseRestBuffs = new ArrayList<>();
-        // 下一张卡 BUFF
-        Consumer<BuffCallParam> startNextCardBuff = null;
-        Consumer<BuffCallParam> elseNextCardBuff = null;
 
         // TODO 判断有人战斗开始直接弃光手牌？
 
@@ -173,13 +176,11 @@ public class Battlefield {
         while (true) {
             if (battle.getDefender() != null) { // 跳过第一次攻击
                 // 给防守方上 休息区 BUFF
-                List<Consumer<BuffCallParam>> restBuffs =
-                        defenderIdx == 0 ? startRestBuffs : elseRestBuffs;
                 BuffCallParam buffCallParam =
                         new BuffCallParam(
                                 TimeRangeEnum.CONTROL_FLAG.getValue(),
                                 defenderPower, cardMap.get(battle.getDefender().getCardId()));
-                for (Consumer<BuffCallParam> restBuff : restBuffs) {
+                for (Consumer<BuffCallParam> restBuff : restBuffsArray[defenderIdx]) {
                     restBuff.accept(buffCallParam);
                 }
             }
@@ -191,15 +192,16 @@ public class Battlefield {
                 Power tempAttackerPower = new Power(cardMap.get(attackerCard.getCardId()).getBasePower());
 
                 // 给进攻方上 休息区 BUFF
-                List<Consumer<BuffCallParam>> restBuffs =
-                        attackerIdx == 0 ? startRestBuffs : elseRestBuffs;
                 BuffCallParam buffCallParam =
                         new BuffCallParam(
                                 TimeRangeEnum.ATTACK.getValue(),
                                 tempAttackerPower, cardMap.get(attackerCard.getCardId()));
-                for (Consumer<BuffCallParam> restBuff : restBuffs) {
+                for (Consumer<BuffCallParam> restBuff : restBuffsArray[attackerIdx]) {
                     restBuff.accept(buffCallParam);
                 }
+                nextBuffs[attackerIdx].accept(buffCallParam);
+
+                // TODO “下一张卡” BUFF 技能，要结合卡的 timeRange
 
                 attackerPower += tempAttackerPower.getValue();
                 battle.getAttacker().add(attackerCard);
@@ -220,16 +222,14 @@ public class Battlefield {
                 for (CardInstance cardInstance : attacker) {
                     Map<String, List<CardInstance>> restZone = halfBattlefields[defenderIdx].getRestZone();
                     Card card = cardMap.get(cardInstance.getId());
-                    if (card.getTimeRange().equals(TimeRangeEnum.REST.getValue())) { // "在休息区" 技能
-                        List<Consumer<BuffCallParam>> restBuffs =
-                                attackerIdx == 0 ? startRestBuffs : elseRestBuffs;
-                        restBuffs.add(new Buff(card));
+                    if (card.getBuffType().equals(BuffTypeEnum.REST.getValue())) { // "在休息区" 技能
+                        restBuffsArray[defenderIdx].add(new Buff(card));
                     }
 
                     restZone.putIfAbsent(card.getName(), new ArrayList<>());
                     restZone.get(card.getName()).add(cardInstance);
                     if (restZone.size() > MAX_REST_ZONE_SIZE) {
-                        winnerId = attackerIdx == 0 ? startPlayerId : elsePlayerId;
+                        winnerId = whoIsAttackerOrDefender(attackerIdx);
                         battleList.add(battle);
                         log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
                         return;
@@ -244,11 +244,15 @@ public class Battlefield {
                 battle.setDefender(lastAttacker);
                 defenderPower.setValue(cardMap.get(lastAttacker.getCardId()).getBasePower());
                 attackerPower = 0;
-            }
 
-            int temp = defenderIdx;
-            defenderIdx = attackerIdx;
-            attackerIdx = temp;
+                int temp = defenderIdx;
+                defenderIdx = attackerIdx;
+                attackerIdx = temp;
+            }
         }
+    }
+
+    private Long whoIsAttackerOrDefender(int idx) {
+        return idx == 0 ? startPlayerId : elsePlayerId;
     }
 }

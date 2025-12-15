@@ -1,9 +1,11 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield;
 
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.buff.BuffCallParam;
 import lombok.Data;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 @Data
 public class HalfBattlefield {
@@ -21,5 +23,10 @@ public class HalfBattlefield {
 
     // 消耗牌堆
     private List<CardInstance> consumedDeck = new ArrayList<>();
+
+    // 休息区 BUFF
+    List<Consumer<BuffCallParam>> restBuffs = new ArrayList<>();
+    // 下一张卡 BUFF
+    Consumer<BuffCallParam> nextBuff = null;
 
 }

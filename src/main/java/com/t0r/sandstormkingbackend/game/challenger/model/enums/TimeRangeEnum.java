@@ -7,7 +7,6 @@ import lombok.Getter;
 public enum TimeRangeEnum {
 
     PICK("当被挑选", "PICK"),
-    REST("在休息区", "REST"),
 
     ATTACK("攻击时", "ATTACK"),
     CONTROL_FLAG("控制旗帜", "CONTROL_FLAG"),

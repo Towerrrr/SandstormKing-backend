@@ -25,6 +25,8 @@ public class Card {
 
     private String timeRange;
 
+    private String buffType;
+
     private BuffConfigParam buffConfigParam;
 
 }
