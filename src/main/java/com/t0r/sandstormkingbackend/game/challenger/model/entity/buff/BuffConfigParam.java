@@ -8,14 +8,14 @@ public class BuffConfigParam {
     /**
      * 仅 “控制旗帜” / “进攻时”
      */
-    private String timeRange;
+    private String timeRange = null;
 
-    private Integer basePower;
+    private Integer basePower = null;
 
-    private String group;
+    private String group = null;
 
-    private String cardName;
+    private String cardName = null;
 
-    private Integer extraPower;
+    private Integer extraPower = null;
 
 }

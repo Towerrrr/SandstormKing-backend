@@ -21,12 +21,15 @@ public class Card {
 
     private String countDescription;
 
-    private Integer count;
+    /**
+     * “S”卡为初始手牌数量，其他卡为在主牌库的数量
+     */
+    private Integer count = 4;
 
-    private String timeRange;
+    private String timeRange = null;
 
-    private String buffType;
+    private String buffType = null;
 
-    private BuffConfigParam buffConfigParam;
+    private BuffConfigParam buffConfigParam = null;
 
 }
