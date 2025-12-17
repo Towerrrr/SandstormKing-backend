@@ -1,6 +1,6 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.buff.BuffConfigParam;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffConfigParam;
 import lombok.Data;
 
 @Data

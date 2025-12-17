@@ -1,6 +1,5 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
-import cn.hutool.Hutool;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.json.JSONUtil;
@@ -196,7 +195,6 @@ public class RoomGameState {
                     CardInstance instance = new CardInstance();
                     instance.setId(localId++);
                     instance.setCardId(card.getId());
-                    instance.setCurrentPower(card.getBasePower());
                     mainDecks.get(cardLevel).add(instance);
                 }
             } else if (levelEnum != null) {
@@ -205,7 +203,6 @@ public class RoomGameState {
                         CardInstance instance = new CardInstance();
                         instance.setId(localId++);
                         instance.setCardId(card.getId());
-                        instance.setCurrentPower(card.getBasePower());
                         challengerPlayer.getHandCardInstances().add(instance);
                     }
                 }
