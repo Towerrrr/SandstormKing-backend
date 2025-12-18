@@ -8,6 +8,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.CupInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.Buff;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffCallParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffTypeEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.PhaseEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.StartWayEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
@@ -220,14 +221,13 @@ public class Battlefield {
                 LinkedList<CardInstance> attacker = descendingIterator.next().getAttacker();
 
                 for (CardInstance cardInstance : attacker) {
-                    Map<String, List<CardInstance>> restZone = halfBattlefields[defenderIdx].getRestZone();
+                    Map<String, LinkedList<CardInstance>> restZone = halfBattlefields[defenderIdx].getRestZone();
                     Card card = cardMap.get(cardInstance.getId());
                     if (card.getBuffType().equals(BuffTypeEnum.REST.getValue())) { // "在休息区" 技能
                         restBuffsArray.get(defenderIdx).add(new Buff(card));
                     }
 
-                    restZone.putIfAbsent(card.getName(), new ArrayList<>());
-                    restZone.get(card.getName()).add(cardInstance);
+                    Move.toRestZone(cardInstance, restZone);
                     if (restZone.size() > MAX_REST_ZONE_SIZE) {
                         winnerId = whoIsAttackerOrDefender(attackerIdx);
                         battleList.add(battle);

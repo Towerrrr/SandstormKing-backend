@@ -20,7 +20,7 @@ public class HalfBattlefield {
     private Map<String, LinkedList<CardInstance>> restZone = new HashMap<>();
 
     // 消耗牌堆
-    private List<CardInstance> consumedDeck = new ArrayList<>();
+    private LinkedList<CardInstance> consumedDeck = new LinkedList<>();
 
     // 休息区 BUFF
     List<Consumer<BuffCallParam>> restBuffs = new ArrayList<>();

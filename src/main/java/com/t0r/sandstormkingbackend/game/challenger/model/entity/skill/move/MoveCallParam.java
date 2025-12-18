@@ -12,8 +12,10 @@ public class MoveCallParam {
     private Map<String, LinkedList<CardInstance>> mainDecks = null;
     private Map<String, LinkedList<CardInstance>> discardDecks = null;
 
+    private LinkedList<CardInstance> handCardInstances = new LinkedList<>();
+
     private LinkedList<CardInstance> handZone = null;
     private Map<String, LinkedList<CardInstance>> restZone = null;
-    private List<CardInstance> consumedDeck = null;
+    private LinkedList<CardInstance> consumedDeck = null;
 
 }

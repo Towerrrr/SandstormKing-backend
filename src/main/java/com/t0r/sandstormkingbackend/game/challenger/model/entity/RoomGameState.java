@@ -425,6 +425,12 @@ public class RoomGameState {
         log.info("用户 {} 弃牌 {}", userId, cardInstanceIds);
 
         LinkedList<CardInstance> handCardInstances = challengerPlayers.get(userId).getHandCardInstances();
+        discardCardInstances(handCardInstances, cardInstanceIds, this.discardDecks);
+    }
+
+    public static void discardCardInstances(LinkedList<CardInstance> handCardInstances,
+                                            Set<Integer> cardInstanceIds,
+                                            Map<String, LinkedList<CardInstance>> discardDecks) {
         Iterator<CardInstance> iterator = handCardInstances.iterator();
         while (iterator.hasNext()) {
             CardInstance cardInstance = iterator.next();
@@ -436,8 +442,8 @@ public class RoomGameState {
                 }
             }
         }
-
     }
+
 
     public void award() {
         log.info("房间 {} 当前回合 {} 颁奖", roomId, currentRound);
