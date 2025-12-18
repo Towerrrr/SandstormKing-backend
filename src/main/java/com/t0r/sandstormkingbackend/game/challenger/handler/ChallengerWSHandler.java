@@ -61,8 +61,18 @@ public class ChallengerWSHandler {
             case DISCARD_CARD:
                 // 前端在开战前将之前所有丢弃的卡牌保存，到开战前才调用丢弃api
                 return handleDiscardCardMessage(gameMessage, roomId, user.getId());
+            case SELECT_CARD:
+                return handleSelectCardMessage(gameMessage, roomId, user.getId());
+            default:
+                throw new RuntimeException("challenger message type error");
         }
         return null;
+    }
+
+    private MessageBroadcastTypeEnum handleSelectCardMessage(GameMessage gameMessage, Long roomId, Long userId) {
+
+
+        return MessageBroadcastTypeEnum.SELF;
     }
 
     private MessageBroadcastTypeEnum handleGetRoomStateMessage(GameMessage gameMessage, Long roomId) {

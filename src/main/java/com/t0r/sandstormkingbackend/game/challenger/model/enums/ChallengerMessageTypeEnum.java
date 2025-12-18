@@ -14,6 +14,7 @@ public enum ChallengerMessageTypeEnum {
     GET_ROOM_STATE("获取房间状态", "GET_ROOM_STATE"),
     BUILD_DECK("构建牌组", "BUILD_DECK"),
     DISCARD_CARD("弃牌", "DISCARD_CARD"),
+    SELECT_CARD("选择卡牌(技能)", "SELECT_CARD"),
     // 仅接收
     READY_BATTLE("准备战斗", "READY_BATTLE"),
     // 仅发送
