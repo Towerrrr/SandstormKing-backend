@@ -20,9 +20,9 @@ public class Move implements Function<MoveCallParam, Boolean> {
 
     private String permission;
 
-    private String target;
+    // 根据 target 来决定要选入的 MoveCallParam
+//    private String target;
 
-    // TODO 注意从主牌堆移动的话也要移动到手牌中
     private String optionalStart;
     private StartEnum start;
     private CardInstance thisCard;
@@ -44,94 +44,105 @@ public class Move implements Function<MoveCallParam, Boolean> {
 
     @Override
     public Boolean apply(MoveCallParam moveCallParam) {
-        Map<String, LinkedList<CardInstance>> mainDecks = moveCallParam.getMainDecks();
-        Map<String, LinkedList<CardInstance>> discardDecks = moveCallParam.getDiscardDecks();
-        LinkedList<CardInstance> handCardInstances = moveCallParam.getHandCardInstances();
-        LinkedList<CardInstance> handZone = moveCallParam.getHandZone();
-        Map<String, LinkedList<CardInstance>> restZone = moveCallParam.getRestZone();
-        LinkedList<CardInstance> consumedDeck = moveCallParam.getConsumedDeck();
+        if (!checkPermission()) {
+            throw new RuntimeException("move permission error");
+        }
 
+        LinkedList<CardInstance> startObj = getStartCards(moveCallParam);
+
+        // TODO: 这里可以插入 maxCount、type、filter 相关处理
+
+        moveToEnd(startObj, moveCallParam);
+        return true;
+    }
+
+    private boolean checkPermission() {
+        return PermissionEnum.OPTIONAL.getValue().equals(this.permission)
+                || PermissionEnum.MUST.getValue().equals(this.permission);
+    }
+
+    private LinkedList<CardInstance> getStartCards(MoveCallParam moveCallParam) {
         LinkedList<CardInstance> startObj = new LinkedList<>();
+        Map<String, LinkedList<CardInstance>> mainDecks = moveCallParam.getMainDecks();
+        LinkedList<CardInstance> handZone = moveCallParam.getHandZone();
+        LinkedList<CardInstance> handCardInstances = moveCallParam.getHandCardInstances();
 
-        if (this.permission.equals(PermissionEnum.OPTIONAL.getValue())) {
-            // TODO 前端询问是否使用
-        } else if (this.permission.equals(PermissionEnum.MUST.getValue())) {
-            if (this.start == null && this.optionalStart.equals(OptionalStartEnum.HAND_ZONE.getValue())) {
-                // TODO 所有需前端选择的情况占位
-            } else if (this.optionalStart == null) {
+        if (this.start == null && OptionalStartEnum.HAND_ZONE.getValue().equals(this.optionalStart)) {
+            // TODO: 前端选择，当前不支持
+            throw new UnsupportedOperationException("前端选择起点尚未实现");
+        } else if (this.optionalStart == null) {
+            if (this.start != null) {
                 switch (this.start) {
                     case THIS_CARD:
                         startObj.add(thisCard);
                         break;
                     case HAND_ZONE_TOP:
-                        for (int i = 0; i < this.count; i++) {
-                            CardInstance cardInstance = handZone.removeFirst();
-                            startObj.add(cardInstance);
-                        }
-                        break;
-                    case A_MAIN_DECK:
-                        for (int i = 0; i < this.count; i++) {
-                            CardInstance cardInstance = mainDecks.get(LevelEnum.A.getValue()).removeFirst();
-                            startObj.add(cardInstance);
-                            handCardInstances.add(cardInstance);
-                        }
-                        break;
-                    case B_MAIN_DECK:
-                        for (int i = 0; i < this.count; i++) {
-                            CardInstance cardInstance = mainDecks.get(LevelEnum.B.getValue()).removeFirst();
-                            startObj.add(cardInstance);
-                            handCardInstances.add(cardInstance);
-                        }
-                        break;
-                    case C_MAIN_DECK:
-                        for (int i = 0; i < this.count; i++) {
-                            CardInstance cardInstance = mainDecks.get(LevelEnum.C.getValue()).removeFirst();
-                            startObj.add(cardInstance);
-                            handCardInstances.add(cardInstance);
-                        }
+                        moveCards(handZone, startObj, true, this.count);
                         break;
                     case HAND_ZONE_BOTTOM:
-                        for (int i = 0; i < this.count; i++) {
-                            CardInstance cardInstance = handZone.removeLast();
-                            startObj.add(cardInstance);
-                        }
+                        moveCards(handZone, startObj, false, this.count);
+                        break;
+                    case A_MAIN_DECK:
+                        moveCards(mainDecks.get(LevelEnum.A.getValue()), startObj, true, this.count);
+                        moveToHand(handCardInstances, startObj);
+                        break;
+                    case B_MAIN_DECK:
+                        moveCards(mainDecks.get(LevelEnum.B.getValue()), startObj, true, this.count);
+                        moveToHand(handCardInstances, startObj);
+                        break;
+                    case C_MAIN_DECK:
+                        moveCards(mainDecks.get(LevelEnum.C.getValue()), startObj, true, this.count);
+                        moveToHand(handCardInstances, startObj);
                         break;
                     default:
                         throw new RuntimeException("move start error");
                 }
-                // TODO maxCount、type、filter 的情况先不写
-                switch (this.end) {
-                    case HAND_ZONE_TOP:
-                        while (!startObj.isEmpty()) {
-                            handZone.addFirst(startObj.removeFirst());
-                        }
-                        break;
-                    case HAND_ZONE_BOTTOM:
-                        while (!startObj.isEmpty()) {
-                            handZone.addLast(startObj.removeFirst());
-                        }
-                        break;
-                    case REST_ZONE:
-                        while (!startObj.isEmpty()) {
-                            Move.toRestZone(startObj.removeFirst(), restZone);
-                        }
-                        break;
-                    case CONSUMED_DECK:
-                        while (!startObj.isEmpty()) {
-                            consumedDeck.add(startObj.removeFirst());
-                        }
-                        break;
-                    case DISCARD_DECK:
-                        Set<Integer> cardIds = startObj.stream().map(CardInstance::getId).collect(Collectors.toSet());
-                        RoomGameState.discardCardInstances(handCardInstances, cardIds, discardDecks);
-                        break;
-                    default:
-                        throw new RuntimeException("move end error");
-                }
             }
-        } else {
-            throw new RuntimeException("move permission error");
         }
-        return null;
+        return startObj;
+    }
+
+    private void moveCards(LinkedList<CardInstance> from, LinkedList<CardInstance> to, boolean fromFirst, int count) {
+        for (int i = 0; i < count; i++) {
+            if (from.isEmpty()) {
+                break;
+            }
+            to.add(fromFirst ? from.removeFirst() : from.removeLast());
+        }
+    }
+
+    private void moveToHand(LinkedList<CardInstance> handCardInstances, LinkedList<CardInstance> cards) {
+        handCardInstances.addAll(cards);
+    }
+
+    private void moveToEnd(LinkedList<CardInstance> cards, MoveCallParam moveCallParam) {
+        LinkedList<CardInstance> handZone = moveCallParam.getHandZone();
+        Map<String, LinkedList<CardInstance>> restZone = moveCallParam.getRestZone();
+        LinkedList<CardInstance> consumedDeck = moveCallParam.getConsumedDeck();
+        Map<String, LinkedList<CardInstance>> discardDecks = moveCallParam.getDiscardDecks();
+        LinkedList<CardInstance> handCardInstances = moveCallParam.getHandCardInstances();
+
+        switch (this.end) {
+            case HAND_ZONE_TOP:
+                handZone.addAll(0, cards);
+                break;
+            case HAND_ZONE_BOTTOM:
+                handZone.addAll(cards);
+                break;
+            case REST_ZONE:
+                for (CardInstance card : cards) {
+                    toRestZone(card, restZone);
+                }
+                break;
+            case CONSUMED_DECK:
+                consumedDeck.addAll(cards);
+                break;
+            case DISCARD_DECK:
+                Set<Integer> cardIds = cards.stream().map(CardInstance::getId).collect(Collectors.toSet());
+                RoomGameState.discardCardInstances(handCardInstances, cardIds, discardDecks);
+                break;
+            default:
+                throw new RuntimeException("move end error");
+        }
     }
 }
