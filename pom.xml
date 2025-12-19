@@ -81,6 +81,16 @@
             <version>5.9</version>
         </dependency>
 
+<!--        Spring WebFlux + RSocket-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-rsocket</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
     </dependencies>
     <dependencyManagement>
         <dependencies>

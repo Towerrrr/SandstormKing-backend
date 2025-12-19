@@ -17,6 +17,10 @@ spring:
     password: 1234
     port: 6379
     timeout: 5000
+  rsocket:
+    server:
+      port: 7000
+      transport: tcp
 
 mybatis-plus:
   configuration:
