@@ -20,7 +20,7 @@ spring:
   rsocket:
     server:
       port: 7000
-      transport: tcp
+      transport: websocket
 
 mybatis-plus:
   configuration:

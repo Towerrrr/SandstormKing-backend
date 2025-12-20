@@ -10,11 +10,6 @@ import org.springframework.messaging.handler.annotation.support.MessageHandlerMe
 public class RSocketConfig {
 
     @Bean
-    public RSocketGameHandler rsocketGameHandler() {
-        return new RSocketGameHandler();
-    }
-
-    @Bean
     public MessageHandlerMethodFactory messageHandlerMethodFactory() {
         return new DefaultMessageHandlerMethodFactory();
     }
