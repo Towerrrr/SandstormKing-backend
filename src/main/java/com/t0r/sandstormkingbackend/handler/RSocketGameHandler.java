@@ -3,6 +3,7 @@ package com.t0r.sandstormkingbackend.handler;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
+import com.t0r.sandstormkingbackend.model.dto.rSocket.ForwardedMessageRequest;
 import com.t0r.sandstormkingbackend.model.dto.room.RoomRSocketRequest;
 import com.t0r.sandstormkingbackend.model.enums.WSMessageTypeEnum;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +56,7 @@ public class RSocketGameHandler {
         Long userId = roomRSocketRequest.getUser().getId();
         String userName = roomRSocketRequest.getUser().getUserName();
         Long roomId = roomRSocketRequest.getRoomId();
-        log.info("用户：{}，创建/加入房间 Rsocket 服务，房间：{}", userId, roomId);
+        log.info("用户：{}，创建/加入房间 RSocket 服务，房间：{}", userId, roomId);
         ThrowUtils.throwIf(userRequesters.get(userId) == null,
                 ErrorCode.NOT_FOUND_ERROR, "用户未连接至 RSocket 服务");
 
@@ -95,11 +96,12 @@ public class RSocketGameHandler {
         return Mono.empty();
     }
 
-    private void broadcast(Long roomId, WSMessage wsMessage) {
+    private void broadcast(Long roomId, WSMessage wsMessage, Long excludeUserId) {
         log.info("广播消息，房间：{}", roomId);
         Set<Long> userIds = roomPlayers.get(roomId);
         if (userIds == null) return;
         for (Long userId : userIds) {
+            if (userId.equals(excludeUserId)) continue;
             Sinks.Many<WSMessage> sink = userSinks.get(userId);
             if (sink != null) {
                 sink.tryEmitNext(wsMessage);
@@ -107,20 +109,25 @@ public class RSocketGameHandler {
         }
     }
 
+    private void broadcast(Long roomId, WSMessage wsMessage) {
+        broadcast(roomId, wsMessage, null);
+    }
+
     @MessageMapping("game.receive")
     public Flux<WSMessage> handleReceiveStream(@Payload Long userId) {
-        log.info("用户：{}，接收消息", userId);
+        log.info("用户：{}，准备接收消息", userId);
         Sinks.Many<WSMessage> sink = userSinks.computeIfAbsent(userId,
                 id -> Sinks.many().multicast().onBackpressureBuffer());
         return sink.asFlux();
     }
 
     @MessageMapping("message")
-    public Mono<Void> handleMessage(String message) {
-        log.info("Received fire-and-forget message: {}", message);
-        // 在这里添加你的业务逻辑
-
-        // 如果不需要返回任何内容，可以直接返回 Mono.empty()
+    public Mono<Void> handleMessage(ForwardedMessageRequest forwardedMessageRequest) {
+        Long userId = forwardedMessageRequest.getUserId();
+        Long roomId = forwardedMessageRequest.getRoomId();
+        WSMessage wsMessage = forwardedMessageRequest.getWsMessage();
+        log.info("用户：{}，发送消息：{}", userId, wsMessage);
+        broadcast(roomId, wsMessage, userId);
         return Mono.empty();
     }
 
