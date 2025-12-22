@@ -14,6 +14,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.event.PlayerReadyEvent;
 import com.t0r.sandstormkingbackend.handler.BroadcastUtil;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
@@ -21,6 +22,7 @@ import com.t0r.sandstormkingbackend.model.entity.User;
 import com.t0r.sandstormkingbackend.model.enums.WSMessageTypeEnum;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.web.socket.WebSocketSession;
@@ -48,11 +50,10 @@ public class RoomGameState {
 
     private boolean hasBot;
 
-    // key: 玩家 ID
-    private Map<Long, WebSocketSession> sessionMap = new ConcurrentHashMap<>();
-
     // 回合数 -> 抽卡计划
     private Map<String, DrawSchedule> drawSchedules = new HashMap<>();
+
+    private final ApplicationEventPublisher eventPublisher;
 
     // TODO 直接解析玩家中的战场属性来分配战场
 
@@ -80,7 +81,7 @@ public class RoomGameState {
 
 //    region 构造方法
 
-    public RoomGameState(InitGameRequest initGameRequest, Set<WebSocketSession> webSocketSessions) {
+    public RoomGameState(InitGameRequest initGameRequest, ApplicationEventPublisher eventPublisher) {
         log.info("初始化房间: {}, 游戏：挑战者", roomId);
 
         // 不变域
@@ -100,7 +101,7 @@ public class RoomGameState {
 
         this.version = initGameRequest.getVersion();
         loadDrawSchedule();
-        initSessionMap(webSocketSessions);
+        this.eventPublisher = eventPublisher;
 
         // 变化域
         this.currentRound = RoundEnum.getFirstRound().getValue();
@@ -108,18 +109,6 @@ public class RoomGameState {
         initCupInstance();
         initCardInstance();
         resetBattlefield();
-    }
-
-    public void initSessionMap(Set<WebSocketSession> webSocketSessions) {
-        log.info("初始化房间 {} 的 WebSocketSession 映射", roomId);
-
-        if (CollUtil.isNotEmpty(webSocketSessions)) {
-            for (WebSocketSession session : webSocketSessions) {
-                User user = (User) session.getAttributes().get("user");
-                Long userId = user.getId();
-                this.sessionMap.put(userId, session);
-            }
-        }
     }
 
     // TODO 后续先全部加载到Handler再从那边取
@@ -378,8 +367,6 @@ public class RoomGameState {
             StartBattleResponse startBattleResponse = new StartBattleResponse(startPlayerId, startWay, battleList);
 
             Set<WebSocketSession> sessions = new HashSet<>();
-            sessions.add(sessionMap.get(userId));
-            sessions.add(sessionMap.get(opponentId));
             BroadcastUtil.sendMessage(
                     sessions,
                     new WSMessage(
@@ -398,20 +385,10 @@ public class RoomGameState {
             }
         } else {
             log.info("用户 {} 确认准备，等待对手 {}", userId, opponentId);
-            BroadcastUtil.sendMessage(sessionMap.get(userId), new WSMessage(
-                    WSMessageTypeEnum.CHALLENGER.getValue(),
-                    null,
-                    new GameMessage(
-                            ChallengerMessageTypeEnum.WAIT_OPPONENT_READY.getValue(),
-                            null, null, null)
-            ));
-            BroadcastUtil.sendMessage(sessionMap.get(opponentId), new WSMessage(
-                    WSMessageTypeEnum.CHALLENGER.getValue(),
-                    null,
-                    new GameMessage(
-                            ChallengerMessageTypeEnum.WAIT_YOU_READY.getValue(),
-                            null, null, null)
-            ));
+            // TODO 临时占位
+            eventPublisher.publishEvent(
+                    new PlayerReadyEvent(roomId, userId, opponentId, battlefield)
+            );
         }
     }
 

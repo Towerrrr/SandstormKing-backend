@@ -45,9 +45,9 @@ public class ChallengerGameManager {
         loadBattlefieldArrange();
     }
 
-    public Map<Integer, Card> initGame(InitGameRequest initGameRequest, Set<WebSocketSession> webSocketSessions) {
+    public Map<Integer, Card> initGame(InitGameRequest initGameRequest) {
         Long roomId = initGameRequest.getRoomId();
-        roomGameStateMap.put(roomId, new RoomGameState(initGameRequest, webSocketSessions));
+        roomGameStateMap.put(roomId, new RoomGameState(initGameRequest));
         return cardMap;
     }
 
