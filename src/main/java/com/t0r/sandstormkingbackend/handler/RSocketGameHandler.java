@@ -2,6 +2,7 @@ package com.t0r.sandstormkingbackend.handler;
 
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
+import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
 import com.t0r.sandstormkingbackend.model.dto.rSocket.ForwardedMessageRequest;
 import com.t0r.sandstormkingbackend.model.dto.room.RoomRSocketRequest;
@@ -35,6 +36,9 @@ public class RSocketGameHandler {
     private final Map<Long, RSocketRequester> userRequesters = new ConcurrentHashMap<>();
 
     private final Map<Long, Sinks.Many<WSMessage>> userSinks = new ConcurrentHashMap<>();
+
+    // TODO 后面修改
+    private final Map<Long, Sinks.Many<GameMessage>> challengerSinks = new ConcurrentHashMap<>();
 
     @ConnectMapping
     public void onConnect(RSocketRequester requester, @Payload Long userId) {
@@ -96,7 +100,8 @@ public class RSocketGameHandler {
         return Mono.empty();
     }
 
-    private void broadcast(Long roomId, WSMessage wsMessage, Long excludeUserId) {
+    // TODO 暴露给Controller用
+    public void broadcast(Long roomId, WSMessage wsMessage, Long excludeUserId) {
         log.info("广播消息，房间：{}", roomId);
         Set<Long> userIds = roomPlayers.get(roomId);
         if (userIds == null) return;
@@ -109,8 +114,16 @@ public class RSocketGameHandler {
         }
     }
 
-    private void broadcast(Long roomId, WSMessage wsMessage) {
+    public void broadcast(Long roomId, WSMessage wsMessage) {
         broadcast(roomId, wsMessage, null);
+    }
+
+    public void sendToUser(Long userId, WSMessage wsMessage) {
+        log.info("接受用户：{}，发送消息：{}", userId, wsMessage);
+        Sinks.Many<WSMessage> sink = userSinks.get(userId);
+        if (sink != null) {
+            sink.tryEmitNext(wsMessage);
+        }
     }
 
     @MessageMapping("game.receive")
@@ -126,7 +139,7 @@ public class RSocketGameHandler {
         Long userId = forwardedMessageRequest.getUserId();
         Long roomId = forwardedMessageRequest.getRoomId();
         WSMessage wsMessage = forwardedMessageRequest.getWsMessage();
-        log.info("用户：{}，发送消息：{}", userId, wsMessage);
+        log.info("用户：{}，发送并转发到所属房间消息：{}", userId, wsMessage);
         broadcast(roomId, wsMessage, userId);
         return Mono.empty();
     }

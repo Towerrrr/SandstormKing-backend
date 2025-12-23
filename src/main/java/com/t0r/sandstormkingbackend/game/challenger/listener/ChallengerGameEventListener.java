@@ -2,23 +2,29 @@ package com.t0r.sandstormkingbackend.game.challenger.listener;
 
 import com.t0r.sandstormkingbackend.game.challenger.controller.ChallengerController;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.PlayerReadyEvent;
+import com.t0r.sandstormkingbackend.game.challenger.model.event.StartBattleEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 @Component
 public class ChallengerGameEventListener {
 
-    private final ChallengerController challengerController;
-
-    public ChallengerGameEventListener(ChallengerController challengerController) {
-        this.challengerController = challengerController;
-    }
+    @Resource
+    private ChallengerController challengerController;
 
     @EventListener
     public void onPlayerReady(PlayerReadyEvent event) {
-        // 调用控制器接口，向用户和对手推送“等待对手/等待你准备”消息
         challengerController.notifyPlayerWaitOpponent(
                 event.getUserId(), event.getOpponentId(), event.getBattlefield()
+        );
+    }
+
+    @EventListener
+    public void onStartBattle(StartBattleEvent event) {
+        challengerController.notifyPlayerStartBattle(
+                event.getUserId(), event.getOpponentId(), event.getBattlefield(), event.getStartBattleResponse()
         );
     }
 

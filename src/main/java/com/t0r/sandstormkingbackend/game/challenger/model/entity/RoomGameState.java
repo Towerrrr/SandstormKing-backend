@@ -15,6 +15,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessag
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.PlayerReadyEvent;
+import com.t0r.sandstormkingbackend.game.challenger.model.event.StartBattleEvent;
 import com.t0r.sandstormkingbackend.handler.BroadcastUtil;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
@@ -366,16 +367,9 @@ public class RoomGameState {
             LinkedList<Battle> battleList = battlefield1.getBattleList();
             StartBattleResponse startBattleResponse = new StartBattleResponse(startPlayerId, startWay, battleList);
 
-            Set<WebSocketSession> sessions = new HashSet<>();
-            BroadcastUtil.sendMessage(
-                    sessions,
-                    new WSMessage(
-                            WSMessageTypeEnum.CHALLENGER.getValue(),
-                            null,
-                            new GameMessage(
-                                    ChallengerMessageTypeEnum.START_BATTLE.getValue(),
-                                    null, null, JSONUtil.toJsonStr(startBattleResponse))
-                    ));
+            eventPublisher.publishEvent(
+                    new StartBattleEvent(roomId, userId, opponentId, battlefield, startBattleResponse)
+            );
 
             battlefield1.setEnd(true);
             if (checkAllEnd()) {
@@ -385,7 +379,6 @@ public class RoomGameState {
             }
         } else {
             log.info("用户 {} 确认准备，等待对手 {}", userId, opponentId);
-            // TODO 临时占位
             eventPublisher.publishEvent(
                     new PlayerReadyEvent(roomId, userId, opponentId, battlefield)
             );

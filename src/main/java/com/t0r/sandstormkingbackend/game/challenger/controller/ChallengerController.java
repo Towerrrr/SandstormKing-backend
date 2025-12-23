@@ -1,12 +1,16 @@
 package com.t0r.sandstormkingbackend.game.challenger.controller;
 
+import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.StartBattleResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.handler.RSocketGameHandler;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
 import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
+import com.t0r.sandstormkingbackend.model.enums.WSMessageTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -38,17 +42,34 @@ public class ChallengerController {
         }
     }
 
-    // TODO 供事件监听器调用
     public void notifyPlayerWaitOpponent(Long userId, Long opponentId, String battlefield) {
         WSMessage waitMsgToUser = new WSMessage(
-                // 填写消息类型、内容
+                WSMessageTypeEnum.CHALLENGER.getValue(),
+                null,
+                new GameMessage(
+                        ChallengerMessageTypeEnum.WAIT_OPPONENT_READY.getValue(),
+                        null, null, null)
         );
         WSMessage waitMsgToOpponent = new WSMessage(
-                // 填写消息类型、内容
+                WSMessageTypeEnum.CHALLENGER.getValue(),
+                null,
+                new GameMessage(
+                        ChallengerMessageTypeEnum.WAIT_YOU_READY.getValue(),
+                        null, null, null)
         );
-        // 推送消息到 userId 和 opponentId 的 websocket/rSocket session
         rSocketGameHandler.sendToUser(userId, waitMsgToUser);
         rSocketGameHandler.sendToUser(opponentId, waitMsgToOpponent);
     }
 
+    public void notifyPlayerStartBattle(Long userId, Long opponentId, String battlefield, StartBattleResponse startBattleResponse) {
+        WSMessage startMsgToUser = new WSMessage(
+                WSMessageTypeEnum.CHALLENGER.getValue(),
+                null,
+                new GameMessage(
+                        ChallengerMessageTypeEnum.START_BATTLE.getValue(),
+                        null, null, JSONUtil.toJsonStr(startBattleResponse))
+        );
+        rSocketGameHandler.sendToUser(userId, startMsgToUser);
+        rSocketGameHandler.sendToUser(opponentId, startMsgToUser);
+    }
 }
