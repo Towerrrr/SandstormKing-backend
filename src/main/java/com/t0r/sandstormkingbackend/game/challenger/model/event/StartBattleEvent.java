@@ -8,13 +8,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public class StartBattleEvent {
 
-    private final Long roomId;
-
     private final Long userId;
 
     private final Long opponentId;
-
-    private final String battlefield;
 
     StartBattleResponse startBattleResponse;
 

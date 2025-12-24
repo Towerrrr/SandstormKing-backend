@@ -1,6 +1,5 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.Util.MyListUtil;
@@ -11,22 +10,15 @@ import com.t0r.sandstormkingbackend.game.challenger.model.dto.StartBattleRespons
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battle;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.PlayerReadyEvent;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.StartBattleEvent;
-import com.t0r.sandstormkingbackend.handler.BroadcastUtil;
-import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
-import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
-import com.t0r.sandstormkingbackend.model.entity.User;
-import com.t0r.sandstormkingbackend.model.enums.WSMessageTypeEnum;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.util.*;
@@ -252,7 +244,7 @@ public class RoomGameState {
         for (int i = 0; i < battlefieldCount; i++) {
             BattlefieldEnum battlefieldEnum = battlefieldEnums[i];
             tempBattlefields.put(battlefieldEnum.getValue(),
-                    new Battlefield(battlefieldEnum.getValue(), currentRound, challengerPlayers));
+                    new Battlefield(battlefieldEnum.getValue(), currentRound, challengerPlayers, eventPublisher));
         }
 
     }
@@ -368,7 +360,7 @@ public class RoomGameState {
             StartBattleResponse startBattleResponse = new StartBattleResponse(startPlayerId, startWay, battleList);
 
             eventPublisher.publishEvent(
-                    new StartBattleEvent(roomId, userId, opponentId, battlefield, startBattleResponse)
+                    new StartBattleEvent(userId, opponentId, startBattleResponse)
             );
 
             battlefield1.setEnd(true);
@@ -380,7 +372,7 @@ public class RoomGameState {
         } else {
             log.info("用户 {} 确认准备，等待对手 {}", userId, opponentId);
             eventPublisher.publishEvent(
-                    new PlayerReadyEvent(roomId, userId, opponentId, battlefield)
+                    new PlayerReadyEvent(userId, opponentId)
             );
         }
     }

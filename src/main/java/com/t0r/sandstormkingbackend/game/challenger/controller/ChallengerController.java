@@ -5,6 +5,7 @@ import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManage
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.StartBattleResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.handler.RSocketGameHandler;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
@@ -42,7 +43,7 @@ public class ChallengerController {
         }
     }
 
-    public void notifyPlayerWaitOpponent(Long userId, Long opponentId, String battlefield) {
+    public void notifyPlayerWaitOpponent(Long userId, Long opponentId) {
         WSMessage waitMsgToUser = new WSMessage(
                 WSMessageTypeEnum.CHALLENGER.getValue(),
                 null,
@@ -61,7 +62,7 @@ public class ChallengerController {
         rSocketGameHandler.sendToUser(opponentId, waitMsgToOpponent);
     }
 
-    public void notifyPlayerStartBattle(Long userId, Long opponentId, String battlefield, StartBattleResponse startBattleResponse) {
+    public void notifyPlayerStartBattle(Long userId, Long opponentId, StartBattleResponse startBattleResponse) {
         WSMessage startMsgToUser = new WSMessage(
                 WSMessageTypeEnum.CHALLENGER.getValue(),
                 null,
@@ -71,5 +72,16 @@ public class ChallengerController {
         );
         rSocketGameHandler.sendToUser(userId, startMsgToUser);
         rSocketGameHandler.sendToUser(opponentId, startMsgToUser);
+    }
+
+    public void notifyPlayerCardSelect(Long userId, CardSelectorRequest cardSelectorRequest) {
+        WSMessage cardSelectMsgToUser = new WSMessage(
+                WSMessageTypeEnum.CHALLENGER.getValue(),
+                null,
+                new GameMessage(
+                        ChallengerMessageTypeEnum.SELECT_CARD.getValue(),
+                        null, null, JSONUtil.toJsonStr(cardSelectorRequest))
+        );
+        rSocketGameHandler.sendToUser(userId, cardSelectMsgToUser);
     }
 }

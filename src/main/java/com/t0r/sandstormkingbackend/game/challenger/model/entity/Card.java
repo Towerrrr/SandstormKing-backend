@@ -1,6 +1,7 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffConfigParam;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorParam;
 import lombok.Data;
 
 @Data
@@ -31,5 +32,7 @@ public class Card {
     private String buffType = null;
 
     private BuffConfigParam buffConfigParam = null;
+
+    private CardSelectorParam cardSelectorParam = null;
 
 }
