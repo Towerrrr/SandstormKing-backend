@@ -1,6 +1,8 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield;
 
 import com.t0r.sandstormkingbackend.Util.MyListUtil;
+import com.t0r.sandstormkingbackend.Util.SpringContextHolder;
+import com.t0r.sandstormkingbackend.game.challenger.manager.PlayerWaitManager;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
@@ -9,6 +11,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.Buff
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffCallParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffTypeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.PhaseEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.StartWayEnum;
@@ -19,8 +22,11 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -212,10 +218,7 @@ public class Battlefield {
 
                 // TODO “下一张卡” BUFF 技能，要结合卡的 timeRange
 
-                // TODO 判断条件占位
-                eventPublisher.publishEvent(
-                        new CardSelectEvent(whoIsAttackerOrDefender(attackerIdx), new CardSelectorRequest())
-                );
+
 
                 attackerPower += tempAttackerPower.getValue();
                 battle.getAttacker().add(attackerCard);
@@ -267,5 +270,23 @@ public class Battlefield {
 
     private Long whoIsAttackerOrDefender(int idx) {
         return idx == 0 ? startPlayerId : elsePlayerId;
+    }
+
+    public Mono<Void> selectCard(int attackerIdx) {
+        String waitKey = "user_" + whoIsAttackerOrDefender(attackerIdx);
+
+        PlayerWaitManager playerWaitManager = SpringContextHolder.getBean(PlayerWaitManager.class);
+        Mono<CardSelectorResponse> mono = playerWaitManager.createWaitMono(waitKey)
+                .doOnCancel(() -> log.info("Wait cancelled for {}", waitKey));
+
+        // TODO 判断条件占位
+        eventPublisher.publishEvent( // 通知前端选牌
+                new CardSelectEvent(whoIsAttackerOrDefender(attackerIdx), new CardSelectorRequest())
+        );
+
+        return mono.flatMap(cardSelectorRequest -> {
+            // TODO 继续战斗的流程
+            return continueBattle(cardSelectorRequest);
+        });
     }
 }

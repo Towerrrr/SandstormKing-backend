@@ -2,15 +2,16 @@ package com.t0r.sandstormkingbackend.game.challenger.controller;
 
 import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager;
+import com.t0r.sandstormkingbackend.game.challenger.manager.PlayerWaitManager;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.StartBattleResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.handler.RSocketGameHandler;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
-import com.t0r.sandstormkingbackend.model.enums.MessageBroadcastTypeEnum;
 import com.t0r.sandstormkingbackend.model.enums.WSMessageTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -31,6 +32,9 @@ public class ChallengerController {
     @Resource
     private ChallengerGameManager challengerGameManager;
 
+    @Resource
+    private PlayerWaitManager playerWaitManager;
+
     @MessageMapping("challenger.initGame")
     public Mono<Map<Integer, Card>> initGame(@Payload InitGameRequest initGameRequest) {
         log.info("挑战者初始化: {}", initGameRequest);
@@ -41,6 +45,13 @@ public class ChallengerController {
             log.error("initGame error", e);
             return Mono.error(e);
         }
+    }
+
+    @MessageMapping("challenger.cardSelect")
+    public Mono<Void> onPlayerSelectCard(CardSelectorResponse cardSelectorResponse) {
+        String waitKey = "user_" + cardSelectorResponse.getUserId();
+        playerWaitManager.completeWaitMono(waitKey, cardSelectorResponse);
+        return Mono.empty();
     }
 
     public void notifyPlayerWaitOpponent(Long userId, Long opponentId) {
