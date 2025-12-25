@@ -17,18 +17,14 @@ import com.t0r.sandstormkingbackend.game.challenger.model.enums.PhaseEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.StartWayEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.CardSelectEvent;
-import com.t0r.sandstormkingbackend.game.challenger.model.event.PlayerReadyEvent;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager.cardMap;
 import static com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.HalfBattlefield.MAX_REST_ZONE_SIZE;
@@ -109,51 +105,44 @@ public class Battlefield {
         decideStartPlayer(challengerPlayers);
     }
 
+    // region 决定开始玩家
+
     /**
      * @param challengerPlayers 玩家 ID -> ChallengerPlayer
      */
     public void decideStartPlayer(Map<Long, ChallengerPlayer> challengerPlayers) {
         log.info("决定先开始出牌的玩家，战场 {}", name);
 
-        // 用户 ID -> 拥有奖杯的回合数的和
-        Map<Long, Integer> cupRoundSumMap = new HashMap<>();
+        List<Long> playerIds = new ArrayList<>(halfBattlefieldMap.keySet());
+        Long p1 = playerIds.get(0);
+        Long p2 = playerIds.get(1);
 
-        for (Long userId : halfBattlefieldMap.keySet()) {
-            List<CupInstance> cupInstances = challengerPlayers.get(userId).getCupInstances();
-            int cupRoundSum = 0;
-            for (CupInstance cupInstance : cupInstances) {
-                cupRoundSum += Integer.parseInt(cupInstance.getRound());
-            }
-            cupRoundSumMap.put(userId, cupRoundSum);
-        }
+        int sum1 = calculateCupRoundSum(challengerPlayers.get(p1));
+        int sum2 = calculateCupRoundSum(challengerPlayers.get(p2));
 
-        // TODO 这段不够优雅
-        // 倒序排放
-        List<Map.Entry<Long, Integer>> sortedEntries = cupRoundSumMap.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                .collect(Collectors.toList());
-
-        Map.Entry<Long, Integer> first = sortedEntries.get(0);
-        Map.Entry<Long, Integer> second = sortedEntries.get(1);
-
-        // 如果两个玩家的奖杯回合数相同，则随机选择一个玩家
-        if (first.getValue().equals(second.getValue())) {
-            log.info("两个玩家的奖杯回合数相同，随机选择一个玩家");
+        if (sum1 == sum2) {
+            log.info("奖杯回合数相同，随机决定先后手");
             this.startWay = StartWayEnum.RANDOM.getValue();
-            if (Math.random() < 0.5) {
-                startPlayerId = first.getKey();
-                elsePlayerId = second.getKey();
-            } else {
-                startPlayerId = second.getKey();
-                elsePlayerId = first.getKey();
-            }
+            Collections.shuffle(playerIds);
         } else {
             this.startWay = StartWayEnum.NORMAL.getValue();
-            startPlayerId = first.getKey();
-            elsePlayerId = second.getKey();
+            if (sum1 < sum2) {
+                Collections.swap(playerIds, 0, 1);
+            }
+            // sum1 >= sum2 时无需交换，p1 天然在前
         }
+
+        this.startPlayerId = playerIds.get(0);
+        this.elsePlayerId = playerIds.get(1);
     }
+
+    private int calculateCupRoundSum(ChallengerPlayer player) {
+        return player.getCupInstances().stream()
+                .mapToInt(cup -> Integer.parseInt(cup.getRound()))
+                .sum();
+    }
+
+    // endregion
 
     public void calculateBattle() {
         HalfBattlefield[] halfBattlefields = new HalfBattlefield[]{
@@ -218,7 +207,7 @@ public class Battlefield {
 
                 // TODO “下一张卡” BUFF 技能，要结合卡的 timeRange
 
-
+                // 假设需要在这里调用 selectCard(int attackerIdx)
 
                 attackerPower += tempAttackerPower.getValue();
                 battle.getAttacker().add(attackerCard);
