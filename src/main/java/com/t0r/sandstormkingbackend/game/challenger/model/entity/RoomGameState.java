@@ -353,7 +353,6 @@ public class RoomGameState {
         Long opponentId = battlefield1.readyBattle(userId);
         if (battlefield1.checkAllReady()) {
             battlefield1.startBattle(challengerPlayers);
-            battlefield1.calculateBattle();
             Long startPlayerId = battlefield1.getStartPlayerId();
             String startWay = battlefield1.getStartWay();
             LinkedList<Battle> battleList = battlefield1.getBattleList();
@@ -407,14 +406,11 @@ public class RoomGameState {
     }
 
 
-    public void award() {
-        log.info("房间 {} 当前回合 {} 颁奖", roomId, currentRound);
+    public void award(String battlefield, Long winnerId) {
+        log.info("房间 {} 当前回合 {} 战场 {} 颁奖", roomId, battlefield, currentRound);
 
         LinkedList<CupInstance> cupInstanceList = cupInstances.get(currentRound).getCupInstanceList();
-        for (Battlefield battlefield : tempBattlefields.values()) {
-            Long winnerId = battlefield.getWinnerId();
-            challengerPlayers.get(winnerId).getCupInstances().add(cupInstanceList.removeFirst());
-        }
+        challengerPlayers.get(winnerId).getCupInstances().add(cupInstanceList.removeFirst());
     }
 
     public void nextRound() {

@@ -16,6 +16,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.enums.PhaseEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.StartWayEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.CardSelectEvent;
+import com.t0r.sandstormkingbackend.game.challenger.model.event.EndBattleEvent;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,8 @@ import static com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefi
 @Accessors(chain = true)
 public class Battlefield {
 
+    Long roomId;
+
     String name;
 
     String currentPhase;
@@ -45,7 +48,6 @@ public class Battlefield {
 
     LinkedList<Battle> battleList = new LinkedList<>();
 
-    boolean isEnd = false;
     Long winnerId;
 
     private final ApplicationEventPublisher eventPublisher;
@@ -324,7 +326,8 @@ public class Battlefield {
         if (attackerPower < defenderPower.getValue()) {
             winnerId = defenderIdx == 0 ? startPlayerId : elsePlayerId;
             log.info("战斗结束，进攻方无多余手牌，胜利者为 {}", winnerId);
-            // todo 跳转至结束
+
+            this.currentState = BattleStateEnum.endBattle;
         } else {
             this.currentState = BattleStateEnum.moveAttackerToRestZone;
         }
@@ -351,6 +354,8 @@ public class Battlefield {
                     winnerId = whoIsAttackerOrDefender(attackerIdx);
                     battleList.add(battle);
                     log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
+
+                    this.currentState = BattleStateEnum.endBattle;
                     return;
                 }
             }
@@ -374,6 +379,10 @@ public class Battlefield {
         }
 
         this.currentState = BattleStateEnum.triggerDefenderRestBuffs;
+    }
+
+    private void endBattle() {
+        eventPublisher.publishEvent(new EndBattleEvent(this.roomId, this.name, this.winnerId));
     }
 
     private Long whoIsAttackerOrDefender(int idx) {

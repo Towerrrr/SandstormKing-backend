@@ -11,5 +11,6 @@ public enum BattleStateEnum {
     applyAttackDamage,
     moveAttackerToRestZone,
     swapAttackAndDefense,
+    endBattle;
 
 }
