@@ -58,23 +58,11 @@ public class Battlefield {
 
     // TODO 判断有人战斗开始直接弃光手牌？
 
-    HalfBattlefield[] halfBattlefields = new HalfBattlefield[]{
-            halfBattlefieldMap.get(startPlayerId),
-            halfBattlefieldMap.get(elsePlayerId)
-    };
+    HalfBattlefield[] halfBattlefields;
     // 0: 当前防守方, 1: 当前进攻方
-    List<LinkedList<CardInstance>> handZones = Arrays.asList(
-            halfBattlefields[0].getHandZone(),
-            halfBattlefields[1].getHandZone()
-    );
-    List<List<Consumer<BuffCallParam>>> restBuffsArray = Arrays.asList(
-            halfBattlefields[0].getRestBuffs(),
-            halfBattlefields[1].getRestBuffs()
-    );
-    List<Consumer<BuffCallParam>> nextBuffs = Arrays.asList(
-            halfBattlefields[0].getNextBuff(),
-            halfBattlefields[1].getNextBuff()
-    );
+    List<LinkedList<CardInstance>> handZones;
+    List<List<Consumer<BuffCallParam>>> restBuffsArray;
+    List<Consumer<BuffCallParam>> nextBuffs;
 
     int attackerIdx = 0;
     int defenderIdx = 1;
@@ -87,8 +75,9 @@ public class Battlefield {
 
     // endregion
 
-    public Battlefield(String name, String currentRound, Map<Long, ChallengerPlayer> challengerPlayers,
+    public Battlefield(Long roomId, String name, String currentRound, Map<Long, ChallengerPlayer> challengerPlayers,
                        ApplicationEventPublisher eventPublisher) {
+        this.roomId = roomId;
         this.name = name;
         this.currentPhase = PhaseEnum.BUILD.getValue();
         for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
@@ -104,49 +93,49 @@ public class Battlefield {
         return Mono.defer(() -> {
                     log.info("当前战斗状态: {}", currentState);
 
-                    Mono<Void> nextMono = Mono.empty();
                     switch (currentState) {
                         case firstAttack:
                             firstAttack();
-                            nextMono = advanceBattle();
                             break;
                         case triggerDefenderRestBuffs:
                             triggerDefenderRestBuffs();
-                            nextMono = advanceBattle();
                             break;
                         case castAttack:
                             castAttack();
-                            nextMono = advanceBattle();
                             break;
                         case triggerAttackerBuffs:
                             triggerAttackerBuffs();
-                            nextMono = advanceBattle();
                             break;
                         case checkAttackPower:
                             checkAttackPower();
-                            nextMono = advanceBattle();
-                            break;
-                        case selectCard:
-                            nextMono = selectCard(attackerIdx);
-                            advanceBattle();
                             break;
                         case applyAttackDamage:
                             applyAttackDamage();
-                            nextMono = advanceBattle();
                             break;
                         case moveAttackerToRestZone:
                             moveAttackerToRestZone();
-                            nextMono = advanceBattle();
                             break;
                         case swapAttackAndDefense:
                             swapAttackAndDefense();
-                            nextMono = advanceBattle();
+                            break;
+                        case endBattle:
+                            endBattle();
+                            break;
+                        case selectCard:
                             break;
                         default:
                             throw new RuntimeException("未知的战斗状态: " + currentState);
                     }
 
-                    return nextMono;
+                    switch (currentState) {
+                        case endBattle:
+                            return Mono.empty();
+                        case selectCard:
+                            return selectCard(attackerIdx)
+                                    .then(Mono.defer(this::advanceBattle));
+                        default:
+                            return Mono.defer(this::advanceBattle);
+                    }
                 })
                 .doOnError(e -> log.error("战斗状态机异常", e));
     }
@@ -176,7 +165,6 @@ public class Battlefield {
      */
     public void startBattle(Map<Long, ChallengerPlayer> challengerPlayers) {
         log.info("开始战斗，战场 {}", name);
-
         this.currentPhase = PhaseEnum.BATTLE.getValue();
 
         for (Map.Entry<Long, HalfBattlefield> entry : halfBattlefieldMap.entrySet()) {
@@ -190,12 +178,32 @@ public class Battlefield {
         }
 
         decideStartPlayer(challengerPlayers);
+
+        this.currentState = BattleStateEnum.firstAttack;
+        // TODO 后续重构
+        halfBattlefields = new HalfBattlefield[]{
+                halfBattlefieldMap.get(startPlayerId),
+                halfBattlefieldMap.get(elsePlayerId)
+        };
+        // 0: 当前防守方, 1: 当前进攻方
+        handZones = Arrays.asList(
+                halfBattlefields[0].getHandZone(),
+                halfBattlefields[1].getHandZone()
+        );
+        restBuffsArray = Arrays.asList(
+                halfBattlefields[0].getRestBuffs(),
+                halfBattlefields[1].getRestBuffs()
+        );
+        nextBuffs = Arrays.asList(
+                halfBattlefields[0].getNextBuff(),
+                halfBattlefields[1].getNextBuff()
+        );
+
         // 启动状态机（非阻塞）
         advanceBattle()
-                .subscribe(
-                        nil -> log.info("战斗状态机正常完成"),
-                        error -> log.error("战斗状态机异常结束", error)
-                );
+                .doOnSuccess(nil -> log.info("战斗状态机正常完成"))
+                .doOnError(error -> log.error("战斗状态机异常结束", error))
+                .subscribe();
     }
 
     // region 决定开始玩家

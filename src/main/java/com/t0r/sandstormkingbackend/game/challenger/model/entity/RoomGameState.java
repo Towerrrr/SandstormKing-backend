@@ -245,7 +245,7 @@ public class RoomGameState {
         for (int i = 0; i < battlefieldCount; i++) {
             BattlefieldEnum battlefieldEnum = battlefieldEnums[i];
             tempBattlefields.put(battlefieldEnum.getValue(),
-                    new Battlefield(battlefieldEnum.getValue(), currentRound, challengerPlayers, eventPublisher));
+                    new Battlefield(this.roomId, battlefieldEnum.getValue(), currentRound, challengerPlayers, eventPublisher));
         }
 
     }
