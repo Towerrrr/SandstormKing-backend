@@ -8,6 +8,7 @@ import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.StartBattleResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battle;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleStateEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
@@ -361,23 +362,12 @@ public class RoomGameState {
             eventPublisher.publishEvent(
                     new StartBattleEvent(userId, opponentId, startBattleResponse)
             );
-
-            battlefield1.setEnd(true);
-            if (checkAllEnd()) {
-                log.info("{} 回合所有战斗结束", currentRound);
-                award();
-                nextRound();
-            }
         } else {
             log.info("用户 {} 确认准备，等待对手 {}", userId, opponentId);
             eventPublisher.publishEvent(
                     new PlayerReadyEvent(userId, opponentId)
             );
         }
-    }
-
-    private boolean checkAllEnd() {
-        return tempBattlefields.values().stream().allMatch(Battlefield::isEnd);
     }
 
 //    endregion
@@ -411,7 +401,16 @@ public class RoomGameState {
 
         LinkedList<CupInstance> cupInstanceList = cupInstances.get(currentRound).getCupInstanceList();
         challengerPlayers.get(winnerId).getCupInstances().add(cupInstanceList.removeFirst());
+
+
+        if (tempBattlefields.values().stream()
+                .allMatch(battlefieldName -> battlefieldName.getCurrentState() == BattleStateEnum.endBattle)) {
+            log.info("{} 回合所有战斗结束", currentRound);
+            nextRound();
+        }
+
     }
+
 
     public void nextRound() {
         log.info("房间 {} 进入下一轮", roomId);

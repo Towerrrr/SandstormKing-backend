@@ -9,11 +9,11 @@ import com.t0r.sandstormkingbackend.game.challenger.model.enums.TotalPlayerCount
 import com.t0r.sandstormkingbackend.service.RoomService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.io.InputStreamReader;
 import java.util.*;
@@ -30,6 +30,9 @@ public class ChallengerGameManager {
     @javax.annotation.Resource
     private RoomService roomService;
 
+    @javax.annotation.Resource
+    private ApplicationEventPublisher eventPublisher;
+
     // 卡牌 ID -> Card
     // TODO 封装一个类专门处理这个数据，包括加载、根据 ID 获取
     public final static Map<Integer, Card> cardMap = new HashMap<>();
@@ -38,7 +41,7 @@ public class ChallengerGameManager {
     public final static Map<Integer, List<Map<String, String>>> battlefieldArrangeMap = new HashMap<>();
 
     // 房间 ID -> RoomGameState
-    private final Map<Long, RoomGameState> roomGameStateMap = new ConcurrentHashMap<>();
+    public final Map<Long, RoomGameState> roomGameStateMap = new ConcurrentHashMap<>();
 
     ChallengerGameManager() {
         loadCardMap();
@@ -47,7 +50,7 @@ public class ChallengerGameManager {
 
     public Map<Integer, Card> initGame(InitGameRequest initGameRequest) {
         Long roomId = initGameRequest.getRoomId();
-        roomGameStateMap.put(roomId, new RoomGameState(initGameRequest));
+        roomGameStateMap.put(roomId, new RoomGameState(initGameRequest, eventPublisher));
         return cardMap;
     }
 
