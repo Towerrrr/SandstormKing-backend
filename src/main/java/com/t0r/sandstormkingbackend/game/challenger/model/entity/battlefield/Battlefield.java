@@ -13,6 +13,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelec
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.PhaseEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.SpecialCardsEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.StartWayEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.CardSelectEvent;
@@ -35,9 +36,8 @@ import static com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefi
 public class Battlefield {
 
     Long roomId;
-
+    int currentRound;
     String name;
-
     String currentPhase;
 
     Map<Long, HalfBattlefield> halfBattlefieldMap = new HashMap<>();
@@ -369,9 +369,15 @@ public class Battlefield {
         if (!battle.getAttacker().isEmpty()) {
             // 下一轮由这轮进攻方最后一张牌做防守方
             CardInstance lastAttacker = battle.getAttacker().getLast();
+            Card lastAttackerCard = cardMap.get(lastAttacker.getCardId());
             battle = new Battle();
             battle.setDefender(lastAttacker);
-            defenderPower.setValue(cardMap.get(lastAttacker.getCardId()).getBasePower());
+            if (lastAttackerCard.getName().equals(SpecialCardsEnum.MACHINE.getName())) {
+                defenderPower.setValue(currentRound);
+            } else {
+                defenderPower.setValue(lastAttackerCard.getBasePower());
+            }
+            // TODO 夺旗成功逻辑
             attackerPower = 0;
 
             int temp = defenderIdx;
