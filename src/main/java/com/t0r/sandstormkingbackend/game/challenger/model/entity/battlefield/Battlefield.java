@@ -150,14 +150,7 @@ public class Battlefield {
     }
 
     public boolean checkAllReady() {
-        boolean allReady = true;
-        for (HalfBattlefield halfBattlefield : halfBattlefieldMap.values()) {
-            if (!halfBattlefield.isReady()) {
-                allReady = false;
-                break;
-            }
-        }
-        return allReady;
+        return halfBattlefieldMap.values().stream().allMatch(HalfBattlefield::isReady);
     }
 
     /**
