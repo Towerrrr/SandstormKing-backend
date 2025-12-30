@@ -48,6 +48,7 @@ public class Buff implements Consumer<BuffCallParam> {
         String currentTimeRange = buffCallParam.getCurrentTimeRange();
         Card card = buffCallParam.getCard();
         Power currentPower = buffCallParam.getCurrentPower();
+        int gainCoefficient = buffCallParam.getGainCoefficient();
 
         boolean timeMatch = Optional.ofNullable(this.timeRange)
                 .map(tr -> tr.equals(currentTimeRange))
@@ -66,7 +67,7 @@ public class Buff implements Consumer<BuffCallParam> {
                 .orElse(true);
 
         if (timeMatch && powerMatch && groupMatch && nameMatch) {
-            currentPower.add(this.extraPower);
+            currentPower.add(this.extraPower * gainCoefficient);
         }
     }
 

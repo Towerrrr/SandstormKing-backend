@@ -6,7 +6,9 @@ import lombok.Getter;
 @Getter
 public enum SpecialCardsEnum {
 
-    MACHINE("基础力量值等于当前回合数", "机械");
+    MACHINE("基础力量值等于当前回合数", "机械"),
+    // 主播
+    STREAMER("获得的力量值增益翻倍", "主播");
     // TODO 鹿娃
 
 

@@ -14,4 +14,7 @@ public class BuffCallParam {
     private Power currentPower;
 
     private Card card;
+
+    private int gainCoefficient = 1;
+
 }
