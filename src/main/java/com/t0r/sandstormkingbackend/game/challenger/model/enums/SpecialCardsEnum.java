@@ -7,8 +7,13 @@ import lombok.Getter;
 public enum SpecialCardsEnum {
 
     MACHINE("基础力量值等于当前回合数", "机械"),
-    // 主播
-    STREAMER("获得的力量值增益翻倍", "主播");
+    STREAMER("获得的力量值增益翻倍", "主播"),
+    PACKAGE_KEEPER("要放休息区->放消耗牌堆", "背包客"),
+    DWARF("要放消耗牌堆->放手牌顶", "侏儒"),
+    GIANT("休息区占2位置", "巨人"),
+    ZEPPELIN("休息区有C卡，立即输掉比赛", "飞艇");
+
+
     // TODO 鹿娃
 
 

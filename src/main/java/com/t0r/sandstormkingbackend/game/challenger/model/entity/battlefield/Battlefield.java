@@ -13,10 +13,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.Buff
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.PhaseEnum;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.SpecialCardsEnum;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.StartWayEnum;
-import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.*;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.CardSelectEvent;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.EndBattleEvent;
 import lombok.Data;
@@ -279,6 +276,19 @@ public class Battlefield {
             Card card = cardMap.get(attackerCard.getCardId());
             if (card.getName().equals(SpecialCardsEnum.MACHINE.getName())) {
                 tempAttackerPower = new Power(currentRound);
+            } else if (card.getName().equals(SpecialCardsEnum.ZEPPELIN.getName())) {
+                Map<String, LinkedList<CardInstance>> restZone = halfBattlefields[attackerIdx].getRestZone();
+                Optional<LinkedList<CardInstance>> levelCFound = restZone.values().stream()
+                        .filter(cardList -> LevelEnum.C.getValue().equals(cardMap.get(cardList.getFirst().getCardId()).getLevel()))
+                        .findFirst();
+
+                if (levelCFound.isPresent()) {
+                    winnerId = whoIsAttackerOrDefender(defenderIdx);
+                    log.info("战斗结束，进攻方打出飞艇并触发技能，胜利者为 {}", winnerId);
+                    this.currentState = BattleStateEnum.endBattle;
+                    return;
+                }
+
             } else {
                 tempAttackerPower = new Power(card.getBasePower());
             }
@@ -374,9 +384,8 @@ public class Battlefield {
                     restBuffsArray.get(defenderIdx).add(new Buff(card));
                 }
 
+                Move.toRestZone(cardInstance, restZone, consumedDeck);
 
-
-                Move.toRestZone(cardInstance, restZone);
                 if (restZone.size() > MAX_REST_ZONE_SIZE) {
                     winnerId = whoIsAttackerOrDefender(attackerIdx);
                     battleList.add(battle);

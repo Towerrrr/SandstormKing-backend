@@ -4,6 +4,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.RoomGameState;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardFilter.CardFilter;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.SpecialCardsEnum;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -36,10 +37,39 @@ public class Move implements Function<MoveCallParam, Boolean> {
 
     private EndEnum end;
 
-    public static void toRestZone(CardInstance cardInstance, Map<String, LinkedList<CardInstance>> restZone) {
+    /**
+     * “背包客”技能在这里实现
+     */
+    public static void toRestZone(CardInstance cardInstance,
+                                  Map<String, LinkedList<CardInstance>> restZone,
+                                  LinkedList<CardInstance> consumedDeck) {
         String name = cardMap.get(cardInstance.getId()).getName();
+        if (name.equals(SpecialCardsEnum.PACKAGE_KEEPER.getName())) {
+            consumedDeck.add(cardInstance);
+            return;
+        }
+        if (name.equals(SpecialCardsEnum.GIANT.getName())) {
+            // 用一个不放卡的位置表示巨人占 2 个位置
+            restZone.putIfAbsent("巨人(占位)", new LinkedList<>());
+        }
+
         restZone.putIfAbsent(name, new LinkedList<>());
         restZone.get(name).add(cardInstance);
+    }
+
+    /**
+     * “侏儒”技能在这里实现
+     */
+    public static void toConsumedDeck(CardInstance cardInstance,
+                                      LinkedList<CardInstance> consumedDeck,
+                                      LinkedList<CardInstance> handZone) {
+        String name = cardMap.get(cardInstance.getId()).getName();
+        if (name.equals(SpecialCardsEnum.DWARF.getName())) {
+            handZone.offerFirst(cardInstance);
+            return;
+        }
+
+        consumedDeck.offer(cardInstance);
     }
 
     @Override
@@ -131,11 +161,13 @@ public class Move implements Function<MoveCallParam, Boolean> {
                 break;
             case REST_ZONE:
                 for (CardInstance card : cards) {
-                    toRestZone(card, restZone);
+                    toRestZone(card, restZone, consumedDeck);
                 }
                 break;
             case CONSUMED_DECK:
-                consumedDeck.addAll(cards);
+                for (CardInstance card : cards) {
+                    toConsumedDeck(card, consumedDeck, handZone);
+                }
                 break;
             case DISCARD_DECK:
                 Set<Integer> cardIds = cards.stream().map(CardInstance::getId).collect(Collectors.toSet());
