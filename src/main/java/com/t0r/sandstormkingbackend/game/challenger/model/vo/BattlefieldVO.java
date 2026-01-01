@@ -2,7 +2,7 @@ package com.t0r.sandstormkingbackend.game.challenger.model.vo;
 
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battle;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.HalfBattlefield;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
 import lombok.Data;
 
 import java.util.LinkedList;
@@ -15,7 +15,7 @@ public class BattlefieldVO {
 
     String currentPhase;
 
-    Map<Long, HalfBattlefield> halfBattlefieldMap;
+    Map<Long, BattleSeat> halfBattlefieldMap;
 
     String startPlayerId;
     String elsePlayerId;

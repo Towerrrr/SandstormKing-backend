@@ -8,7 +8,9 @@ import java.util.*;
 import java.util.function.Consumer;
 
 @Data
-public class HalfBattlefield {
+public class BattleSeat {
+
+    private final Long userId;
 
     // 战斗前构筑是否就绪
     private boolean isReady = false;
