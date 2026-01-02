@@ -1,17 +1,13 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield;
 
-import com.t0r.sandstormkingbackend.Util.MyListUtil;
 import com.t0r.sandstormkingbackend.Util.SpringContextHolder;
 import com.t0r.sandstormkingbackend.game.challenger.manager.PlayerWaitManager;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.Buff;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffCallParam;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffTypeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.*;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.CardSelectEvent;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.EndBattleEvent;
@@ -22,10 +18,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager.cardMap;
-import static com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat.MAX_REST_ZONE_SIZE;
 
 @Data
 @Slf4j
@@ -153,14 +147,10 @@ public class Battlefield {
         log.info("开始战斗，战场 {}", name);
         this.currentPhase = PhaseEnum.BATTLE.getValue();
 
-        for (Map.Entry<Long, BattleSeat> entry : halfBattlefieldMap.entrySet()) {
-            Long userId = entry.getKey();
-            LinkedList<CardInstance> handCardInstances = challengerPlayers.get(userId).getHandCardInstances();
-
-            LinkedList<CardInstance> ShuffledHandCardInstances = MyListUtil.shuffleLinkedList(handCardInstances);
-
-            BattleSeat battleSeat = entry.getValue();
-            battleSeat.getHandZone().addAll(ShuffledHandCardInstances); // 手牌的副本
+        for (BattleSeat battleSeat : halfBattlefieldMap.values()) {
+            LinkedList<CardInstance> handCardInstances =
+                    challengerPlayers.get(battleSeat.getUserId()).getHandCardInstances();
+            battleSeat.initHandZone(handCardInstances);
         }
 
         decideStartPlayer(challengerPlayers);
@@ -220,7 +210,7 @@ public class Battlefield {
      */
     private void firstAttack() {
         battle = new Battle();
-        attackerCard = attacker.getHandZone().removeFirst();
+        attackerCard = attacker.castNextCard();
         battle.getAttacker().add(attackerCard);
         attackerPower = cardMap.get(attackerCard.getCardId()).getBasePower();
 
@@ -237,9 +227,7 @@ public class Battlefield {
             }
             BuffCallParam buffCallParam =
                     new BuffCallParam(TimeRangeEnum.CONTROL_FLAG.getValue(), defenderPower, defenderCard, gainCoefficient);
-            for (Consumer<BuffCallParam> restBuff : defender.getRestBuffs()) {
-                restBuff.accept(buffCallParam);
-            }
+            defender.triggerRestBuffs(buffCallParam);
         }
 
         this.currentState = BattleStateEnum.castAttack;
@@ -248,25 +236,19 @@ public class Battlefield {
     private void castAttack() {
         // 进攻方出牌，直到攻击力 >= 防守力 或手牌用完
         if (attackerPower < Objects.requireNonNull(defenderPower).getValue() &&
-                !attacker.getHandZone().isEmpty()) {
+                attacker.hasHandCards()) {
             // TODO 控制旗帜
-            attackerCard = attacker.getHandZone().removeFirst();
+            attackerCard = attacker.castNextCard();
             Card card = cardMap.get(attackerCard.getCardId());
             if (card.getName().equals(SpecialCardsEnum.MACHINE.getName())) {
                 tempAttackerPower = new Power(currentRound);
             } else if (card.getName().equals(SpecialCardsEnum.ZEPPELIN.getName())) {
-                Map<String, LinkedList<CardInstance>> restZone = attacker.getRestZone();
-                Optional<LinkedList<CardInstance>> levelCFound = restZone.values().stream()
-                        .filter(cardList -> LevelEnum.C.getValue().equals(cardMap.get(cardList.getFirst().getCardId()).getLevel()))
-                        .findFirst();
-
-                if (levelCFound.isPresent()) {
+                if (attacker.hasLevelCCardInRestZone()) {
                     this.winnerId = defender.getUserId();
                     log.info("战斗结束，进攻方打出飞艇并触发技能，胜利者为 {}", winnerId);
                     this.currentState = BattleStateEnum.endBattle;
                     return;
                 }
-
             } else {
                 tempAttackerPower = new Power(card.getBasePower());
             }
@@ -287,10 +269,8 @@ public class Battlefield {
         }
         BuffCallParam buffCallParam =
                 new BuffCallParam(TimeRangeEnum.ATTACK.getValue(), tempAttackerPower, card, gainCoefficient);
-        for (Consumer<BuffCallParam> restBuff : attacker.getRestBuffs()) {
-            restBuff.accept(buffCallParam);
-        }
-        attacker.getNextBuff().accept(buffCallParam);
+        attacker.triggerRestBuffs(buffCallParam);
+        attacker.triggerNextBuff(buffCallParam);
         // TODO 进攻时
 
         // TODO 实施“下一张卡” BUFF 技能，要结合卡的 timeRange
@@ -354,17 +334,7 @@ public class Battlefield {
             LinkedList<CardInstance> downedCard = descendingIterator.next().getAttacker();
 
             for (CardInstance cardInstance : downedCard) {
-                Map<String, LinkedList<CardInstance>> restZone = defender.getRestZone();
-                LinkedList<CardInstance> consumedDeck = defender.getConsumedDeck();
-                Card card = cardMap.get(cardInstance.getId());
-
-                if (card.getBuffType().equals(BuffTypeEnum.REST.getValue())) { // "在休息区" 技能
-                    defender.getRestBuffs().add(new Buff(card));
-                }
-
-                Move.toRestZone(cardInstance, restZone, consumedDeck);
-
-                if (restZone.size() > MAX_REST_ZONE_SIZE) {
+                if (defender.addToRestZone(cardInstance)) {
                     this.winnerId = attacker.getUserId();
                     battleList.add(battle);
                     log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);

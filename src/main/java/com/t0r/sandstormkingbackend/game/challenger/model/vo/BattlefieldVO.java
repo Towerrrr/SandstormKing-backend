@@ -22,7 +22,6 @@ public class BattlefieldVO {
 
     LinkedList<Battle> battleList;
 
-    boolean isEnd;
     String winnerId;
 
     public BattlefieldVO(Battlefield battlefield) {
@@ -32,7 +31,6 @@ public class BattlefieldVO {
         this.startPlayerId = String.valueOf(battlefield.getStartPlayerId());
         this.elsePlayerId = String.valueOf(battlefield.getElsePlayerId());
         this.battleList = battlefield.getBattleList();
-        this.isEnd = battlefield.isEnd();
         this.winnerId = String.valueOf(battlefield.getWinnerId());
     }
 }
