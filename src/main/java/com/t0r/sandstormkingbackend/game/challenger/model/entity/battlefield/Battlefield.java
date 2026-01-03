@@ -221,10 +221,7 @@ public class Battlefield {
         if (battle.getDefender() != null) { // 跳过第一次攻击
             // 给防守方上 休息区 BUFF
             Card defenderCard = cardMap.get(battle.getDefender().getCardId());
-            int gainCoefficient = 1;
-            if (defenderCard.getName().equals(SpecialCardsEnum.STREAMER.getName())) {
-                gainCoefficient = 2;
-            }
+            int gainCoefficient = SpecialSkills.getGainCoefficient(defenderCard);
             BuffCallParam buffCallParam =
                     new BuffCallParam(TimeRangeEnum.CONTROL_FLAG.getValue(), defenderPower, defenderCard, gainCoefficient);
             defender.triggerRestBuffs(buffCallParam);
@@ -240,18 +237,15 @@ public class Battlefield {
             // TODO 控制旗帜
             attackerCard = attacker.castNextCard();
             Card card = cardMap.get(attackerCard.getCardId());
-            if (card.getName().equals(SpecialCardsEnum.MACHINE.getName())) {
-                tempAttackerPower = new Power(currentRound);
-            } else if (card.getName().equals(SpecialCardsEnum.ZEPPELIN.getName())) {
-                if (attacker.hasLevelCCardInRestZone()) {
-                    this.winnerId = defender.getUserId();
-                    log.info("战斗结束，进攻方打出飞艇并触发技能，胜利者为 {}", winnerId);
-                    this.currentState = BattleStateEnum.endBattle;
-                    return;
-                }
-            } else {
-                tempAttackerPower = new Power(card.getBasePower());
+
+            if (SpecialSkills.checkInstantWin(card, attacker)) {
+                this.winnerId = defender.getUserId();
+                log.info("战斗结束，进攻方打出飞艇并触发技能，胜利者为 {}", winnerId);
+                this.currentState = BattleStateEnum.endBattle;
+                return;
             }
+
+            tempAttackerPower = new Power(SpecialSkills.calculateRealTimePower(card, currentRound));
             // TODO 鹿娃
 
             this.currentState = BattleStateEnum.triggerAttackerBuffs;
@@ -263,10 +257,7 @@ public class Battlefield {
 
     private void triggerAttackerBuffs() {
         Card card = cardMap.get(attackerCard.getCardId());
-        int gainCoefficient = 1;
-        if (card.getName().equals(SpecialCardsEnum.STREAMER.getName())) {
-            gainCoefficient = 2;
-        }
+        int gainCoefficient = SpecialSkills.getGainCoefficient(card);
         BuffCallParam buffCallParam =
                 new BuffCallParam(TimeRangeEnum.ATTACK.getValue(), tempAttackerPower, card, gainCoefficient);
         attacker.triggerRestBuffs(buffCallParam);
@@ -355,11 +346,7 @@ public class Battlefield {
             Card lastAttackerCard = cardMap.get(lastAttacker.getCardId());
             battle = new Battle();
             battle.setDefender(lastAttacker);
-            if (lastAttackerCard.getName().equals(SpecialCardsEnum.MACHINE.getName())) {
-                defenderPower.setValue(currentRound);
-            } else {
-                defenderPower.setValue(lastAttackerCard.getBasePower());
-            }
+            defenderPower.setValue(SpecialSkills.calculateRealTimePower(lastAttackerCard, currentRound));
             // TODO 夺旗成功逻辑
             attackerPower = 0;
 
