@@ -4,8 +4,7 @@
     "name": "新丁",
     "basePower": 1,
     "group": "city",
-    "level": "A",
-    "count": 4
+    "level": "A"
   },
   {
     "id": 6,
@@ -22,8 +21,7 @@
     "basePower": 2,
     "group": "city",
     "level": "A",
-    "skillDescription": "查看你牌组顶的 2 张卡牌。将 1 张放置在你的牌组底，另 1 张放置在牌组顶。",
-    "count": 4
+    "skillDescription": "查看你牌组顶的 2 张卡牌。将 1 张放置在你的牌组底，另 1 张放置在牌组顶。"
   },
   {
     "id": 8,
@@ -40,8 +38,7 @@
     "basePower": 2,
     "group": "city",
     "level": "B",
-    "skillDescription": "你在休息区中每有一个不同的套牌图标，这张卡牌获得+1。",
-    "count": 4
+    "skillDescription": "你在休息区中每有一个不同的套牌图标，这张卡牌获得+1。"
   },
   {
     "id": 10,

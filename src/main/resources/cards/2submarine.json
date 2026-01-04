@@ -5,8 +5,7 @@
     "basePower": 1,
     "group": "submarine",
     "level": "A",
-    "skillDescription": "如果你的休息区中至少有一张 submarine 卡牌，这张卡牌获得+3。",
-    "count": 4
+    "skillDescription": "如果你的休息区中至少有一张 submarine 卡牌，这张卡牌获得+3。"
   },
   {
     "id": 12,
@@ -14,8 +13,7 @@
     "basePower": 2,
     "group": "submarine",
     "level": "A",
-    "skillDescription": "控制旗帜：这张卡牌获得+2。",
-    "count": 4
+    "skillDescription": "控制旗帜：这张卡牌获得+2。"
   },
   {
     "id": 13,
@@ -23,8 +21,7 @@
     "basePower": 2,
     "group": "submarine",
     "level": "A",
-    "skillDescription": "查看你的牌组。从中选择任意一张卡牌并将它放置在你的牌组底。",
-    "count": 4
+    "skillDescription": "查看你的牌组。从中选择任意一张卡牌并将它放置在你的牌组底。"
   },
   {
     "id": 14,
@@ -41,8 +38,7 @@
     "basePower": 2,
     "group": "submarine",
     "level": "B",
-    "skillDescription": "在休息区：你控制旗帜的卡牌获得+1。",
-    "count": 4
+    "skillDescription": "在休息区：你控制旗帜的卡牌获得+1。"
   },
   {
     "id": 16,
@@ -50,8 +46,7 @@
     "basePower": 4,
     "group": "submarine",
     "level": "B",
-    "skillDescription": "如果你的牌组只剩一张或者没有卡牌，这张卡牌获得+2。",
-    "count": 4
+    "skillDescription": "如果你的牌组只剩一张或者没有卡牌，这张卡牌获得+2。"
   },
   {
     "id": 17,
@@ -59,8 +54,7 @@
     "basePower": 4,
     "group": "submarine",
     "level": "B",
-    "skillDescription": "失去旗帜：查看你牌组顶的 2 张卡牌。将 1 张放置在你的牌组底，另 1 张放置在牌组顶。",
-    "count": 4
+    "skillDescription": "失去旗帜：查看你牌组顶的 2 张卡牌。将 1 张放置在你的牌组底，另 1 张放置在牌组顶。"
   },
   {
     "id": 18,
@@ -77,8 +71,7 @@
     "basePower": 6,
     "group": "submarine",
     "level": "C",
-    "skillDescription": "你可以将对手休息区中的一张卡牌放入他的消耗牌堆。",
-    "count": 4
+    "skillDescription": "你可以将对手休息区中的一张卡牌放入他的消耗牌堆。"
   },
   {
     "id": 20,
@@ -95,7 +88,6 @@
     "basePower": 9,
     "group": "submarine",
     "level": "C",
-    "skillDescription": "将你牌组中最底下的那张牌放入你的消耗牌堆。",
-    "count": 4
+    "skillDescription": "将你牌组中最底下的那张牌放入你的消耗牌堆。"
   }
 ]

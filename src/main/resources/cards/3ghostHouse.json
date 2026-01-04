@@ -5,8 +5,7 @@
     "basePower": 1,
     "group": "ghostHouse",
     "level": "A",
-    "skillDescription": "从你的休息区中将最多 2 张卡牌放入你的消耗牌堆。",
-    "count": 4
+    "skillDescription": "从你的休息区中将最多 2 张卡牌放入你的消耗牌堆。"
   },
   {
     "id": 23,
@@ -33,8 +32,7 @@
     "basePower": 1,
     "group": "ghostHouse",
     "level": "B",
-    "skillDescription": "你的对手需要将他牌组顶的那张卡牌放入他的消耗牌堆。",
-    "count": 4
+    "skillDescription": "你的对手需要将他牌组顶的那张卡牌放入他的消耗牌堆。"
   },
   {
     "id": 26,
@@ -42,8 +40,7 @@
     "basePower": 2,
     "group": "ghostHouse",
     "level": "B",
-    "skillDescription": "你在休息区每有一张 ghostHouse 卡牌，这张卡牌获得+1。",
-    "count": 4
+    "skillDescription": "你在休息区每有一张 ghostHouse 卡牌，这张卡牌获得+1。"
   },
   {
     "id": 27,
@@ -51,8 +48,7 @@
     "basePower": 3,
     "group": "ghostHouse",
     "level": "B",
-    "skillDescription": "从你的休息区将一张基础力量值为 2 的卡牌放置在你的牌组顶。",
-    "count": 4
+    "skillDescription": "从你的休息区将一张基础力量值为 2 的卡牌放置在你的牌组顶。"
   },
   {
     "id": 28,
@@ -69,8 +65,7 @@
     "basePower": 4,
     "group": "ghostHouse",
     "level": "C",
-    "skillDescription": "从你的休息区中将一张等级B卡牌放回你的牌组顶。",
-    "count": 4
+    "skillDescription": "从你的休息区中将一张等级B卡牌放回你的牌组顶。"
   },
   {
     "id": 30,
@@ -78,8 +73,7 @@
     "basePower": 5,
     "group": "ghostHouse",
     "level": "C",
-    "skillDescription": "从你的休息区中将最多 2 张卡牌放入你的消耗牌堆。",
-    "count": 4
+    "skillDescription": "从你的休息区中将最多 2 张卡牌放入你的消耗牌堆。"
   },
   {
     "id": 31,

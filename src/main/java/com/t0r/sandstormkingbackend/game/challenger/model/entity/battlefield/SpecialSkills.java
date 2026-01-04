@@ -4,6 +4,9 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.SpecialCardsEnum;
 import lombok.experimental.UtilityClass;
 
+/**
+ * 工具类：有涉及特殊卡技能的逻辑，也有普通卡相关的实现。
+ */
 @UtilityClass
 public class SpecialSkills {
 
