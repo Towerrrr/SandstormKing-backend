@@ -15,6 +15,7 @@ public enum ChallengerMessageTypeEnum {
     BUILD_DECK("构建牌组", "BUILD_DECK"),
     DISCARD_CARD("弃牌", "DISCARD_CARD"),
     SELECT_CARD("选择卡牌(技能)", "SELECT_CARD"),
+    CHECK_AND_PUT("检查并放置卡牌(技能)", "CHECK_AND_PUT"),
     // 仅接收
     READY_BATTLE("准备战斗", "READY_BATTLE"),
     // 仅发送

@@ -28,6 +28,7 @@ public class BattleSeat {
     // 战斗前构筑是否就绪
     private boolean isReady = false;
 
+    @Getter
     private final LinkedList<CardInstance> handZone = new LinkedList<>();
 
     // 卡牌名称 -> 卡牌实例列表
@@ -54,6 +55,54 @@ public class BattleSeat {
 
     public boolean hasHandCards() {
         return !this.handZone.isEmpty();
+    }
+
+    public LinkedList<CardInstance> popTopHandZone(int n) {
+        LinkedList<CardInstance> result = new LinkedList<>();
+        if (n <= 0 || this.handZone.isEmpty()) {
+            return result;
+        }
+
+        while (n > 0 && !this.handZone.isEmpty()) { // 支持剩余手牌仅剩小于 n 张的情况
+            result.add(this.handZone.removeFirst());
+            n--;
+        }
+        return result;
+    }
+
+    public LinkedList<CardInstance> popBottomHandZone(int n) {
+        LinkedList<CardInstance> result = new LinkedList<>();
+        if (n <= 0 || this.handZone.isEmpty()) {
+            return result;
+        }
+
+        while (n > 0 && !this.handZone.isEmpty()) { // 支持剩余手牌仅剩小于 n 张的情况
+            result.add(this.handZone.removeLast());
+            n--;
+        }
+        return result;
+    }
+
+    public void addCardsToHandZoneHead(LinkedList<CardInstance> cards) {
+        if (cards == null || cards.isEmpty()) {
+            return;
+        }
+
+        this.handZone.addAll(0, cards);
+    }
+
+    public void addCardsToHandZoneTail(LinkedList<CardInstance> cards) {
+        if (cards == null || cards.isEmpty()) {
+            return;
+        }
+        this.handZone.addAll(cards);
+    }
+
+    public void addCardsToConsumedDeck(LinkedList<CardInstance> cards) {
+        if (cards == null || cards.isEmpty()) {
+            return;
+        }
+        this.consumedDeck.addAll(cards);
     }
 
     public boolean addToRestZone(CardInstance cardInstance) {

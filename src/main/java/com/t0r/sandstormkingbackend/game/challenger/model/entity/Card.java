@@ -2,6 +2,7 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffConfigParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorParam;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPutParam;
 import lombok.Data;
 
 @Data
@@ -26,6 +27,10 @@ public class Card {
      * “S”卡为初始手牌数量，其他卡为在主牌库的数量
      */
     private Integer count = 4;
+
+    // region 技能属性
+
+    private CheckAndPutParam checkAndPutParam = null;
 
     private String timeRange = null;
 

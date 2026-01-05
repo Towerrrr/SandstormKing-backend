@@ -8,6 +8,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.dto.StartBattleRespons
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPutRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.handler.RSocketGameHandler;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
@@ -94,5 +95,16 @@ public class ChallengerController {
                         null, null, JSONUtil.toJsonStr(cardSelectorRequest))
         );
         rSocketGameHandler.sendToUser(userId, cardSelectMsgToUser);
+    }
+
+    public void notifyPlayerCheckAndPut(long userId, CheckAndPutRequest checkAndPutRequest) {
+        WSMessage checkAndPutMsgToUser = new WSMessage(
+                WSMessageTypeEnum.CHALLENGER.getValue(),
+                null,
+                new GameMessage(
+                        ChallengerMessageTypeEnum.CHECK_AND_PUT.getValue(),
+                        null, null, JSONUtil.toJsonStr(checkAndPutRequest))
+        );
+        rSocketGameHandler.sendToUser(userId, checkAndPutMsgToUser);
     }
 }

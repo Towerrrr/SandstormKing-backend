@@ -2,6 +2,7 @@ package com.t0r.sandstormkingbackend.game.challenger.listener;
 
 import com.t0r.sandstormkingbackend.game.challenger.controller.ChallengerController;
 import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPutEvent;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.CardSelectEvent;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.EndBattleEvent;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.PlayerReadyEvent;
@@ -35,9 +36,16 @@ public class ChallengerGameEventListener {
     }
 
     @EventListener
+    public void onCheckAndPut(CheckAndPutEvent event) {
+        challengerController.notifyPlayerCheckAndPut(event.getUserId(), event.getCheckAndPutRequest());
+    }
+
+    @EventListener
     public void onCardSelect(CardSelectEvent event) {
         challengerController.notifyPlayerCardSelect(event.getUserId(), event.getCardSelectorRequest());
     }
+
+    // 未涉及 Controller 层逻辑
 
     @EventListener
     public void onEndBattle(EndBattleEvent event) {

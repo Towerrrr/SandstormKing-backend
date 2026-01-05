@@ -273,7 +273,7 @@ public class Battlefield {
         String waitKey = "user_" + attacker.getUserId();
 
         PlayerWaitManager playerWaitManager = SpringContextHolder.getBean(PlayerWaitManager.class);
-        Mono<CardSelectorResponse> mono = playerWaitManager.createWaitMono(waitKey)
+        Mono<CardSelectorResponse> mono = playerWaitManager.createWaitMono(waitKey, CardSelectorResponse.class)
                 .doOnCancel(() -> log.info("Wait cancelled for {}", waitKey));
 
         // TODO 判断条件占位
