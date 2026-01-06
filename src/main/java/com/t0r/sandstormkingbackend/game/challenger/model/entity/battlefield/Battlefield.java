@@ -8,6 +8,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlaye
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffCallParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPut;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.*;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.CardSelectEvent;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.EndBattleEvent;
@@ -108,6 +109,7 @@ public class Battlefield {
                         case endBattle:
                             endBattle();
                             break;
+                        case checkAndPut:
                         case selectCard:
                             break;
                         default:
@@ -119,6 +121,9 @@ public class Battlefield {
                             return Mono.empty();
                         case selectCard:
                             return selectCard(attacker)
+                                    .then(Mono.defer(this::advanceBattle));
+                        case checkAndPut:
+                            return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)
                                     .then(Mono.defer(this::advanceBattle));
                         default:
                             return Mono.defer(this::advanceBattle);
@@ -248,7 +253,7 @@ public class Battlefield {
             tempAttackerPower = new Power(SpecialSkills.calculateRealTimePower(card, currentRound));
             // TODO 鹿娃
 
-            this.currentState = BattleStateEnum.triggerAttackerBuffs;
+            this.currentState = BattleStateEnum.checkAndPut;
         } else {
             battleList.add(battle); // 记录战斗过程
             this.currentState = BattleStateEnum.checkAttackPower;

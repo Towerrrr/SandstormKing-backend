@@ -9,6 +9,13 @@ import java.util.LinkedList;
 @Getter
 public class CheckAndPutResponse {
 
+    private String userId;
+
+    /**
+     * 在查看所有卡牌并放置到最后的时候用
+     */
+    Integer cardInstanceId = null;
+
     Put[] puts;
 
 }

@@ -9,6 +9,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPutRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPutResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.ChallengerMessageTypeEnum;
 import com.t0r.sandstormkingbackend.handler.RSocketGameHandler;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
@@ -52,6 +53,13 @@ public class ChallengerController {
     public Mono<Void> onPlayerSelectCard(CardSelectorResponse cardSelectorResponse) {
         String waitKey = "user_" + cardSelectorResponse.getUserId();
         playerWaitManager.completeWaitMono(waitKey, cardSelectorResponse);
+        return Mono.empty();
+    }
+
+    @MessageMapping("challenger.checkAndPut")
+    public Mono<Void> onPlayerCheckAndPut(CheckAndPutResponse checkAndPutResponse) {
+        String waitKey = "user_" + checkAndPutResponse.getUserId();
+        playerWaitManager.completeWaitMono(waitKey, checkAndPutResponse);
         return Mono.empty();
     }
 

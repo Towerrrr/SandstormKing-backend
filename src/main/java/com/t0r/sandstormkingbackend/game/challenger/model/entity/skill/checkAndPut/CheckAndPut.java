@@ -17,6 +17,9 @@ import java.util.LinkedList;
 
 import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager.cardMap;
 
+/**
+ * 一个位置放置多个卡时，顺序由前端指定
+ */
 @Slf4j
 @UtilityClass
 public class CheckAndPut {
@@ -63,13 +66,26 @@ public class CheckAndPut {
                 default:
                     throw new RuntimeException("whereToCheckEnum is not valid");
             }
+            return mono
+                    .doOnSuccess(response -> {
+                        judgeHandZoneAll(whereToCheckEnum, battleSeat.getHandZone(), response.getCardInstanceId());
+                        putCard(response, battleSeat);
+                    })
+                    .then()
+                    .doOnSuccess(v -> battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs));
+        } else {
+            return Mono.empty();
         }
-        return mono
-                .doOnSuccess(response -> {
-                    putCard(response, battleSeat);
-                })
-                .then()
-                .doOnSuccess(v -> battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs));
+    }
+
+    private void judgeHandZoneAll(WhereToCheckEnum whereToCheckEnum,
+                                  LinkedList<CardInstance> handZone, Integer cardInstanceId) {
+        if (whereToCheckEnum == WhereToCheckEnum.HAND_ZONE_ALL) {
+            handZone.stream()
+                    .filter(cardInstance -> cardInstance.getId().equals(cardInstanceId))
+                    .findFirst()
+                    .ifPresent(handZone::remove);
+        }
     }
 
     private void putCard(CheckAndPutResponse checkAndPutResponse, BattleSeat battleSeat) {

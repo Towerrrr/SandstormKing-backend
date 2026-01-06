@@ -5,6 +5,7 @@ public enum BattleStateEnum {
     firstAttack,
     triggerDefenderRestBuffs,
     castAttack,
+    checkAndPut,
     triggerAttackerBuffs,
     checkAttackPower,
     selectCard,
