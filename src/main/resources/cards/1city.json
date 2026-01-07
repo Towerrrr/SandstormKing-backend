@@ -2,6 +2,7 @@
   {
     "id": 5,
     "name": "新丁",
+    "Ename": "Rookie",
     "basePower": 1,
     "group": "city",
     "level": "A"

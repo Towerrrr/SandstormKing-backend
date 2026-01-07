@@ -53,8 +53,16 @@ public class BattleSeat {
         return this.handZone.removeFirst();
     }
 
-    public boolean hasHandCards() {
+    public boolean hasCardInHandZone() {
         return !this.handZone.isEmpty();
+    }
+
+    public boolean hasCardInConsumedDeck() {
+        return !this.consumedDeck.isEmpty();
+    }
+
+    public int getHandZoneSize() {
+        return this.handZone.size();
     }
 
     public LinkedList<CardInstance> popTopHandZone(int n) {
@@ -134,6 +142,12 @@ public class BattleSeat {
         return this.restZone.values().stream()
                 .anyMatch(list -> !list.isEmpty() &&
                         LevelEnum.C.getValue().equals(cardMap.get(list.getFirst().getCardId()).getLevel()));
+    }
+
+    public boolean hasRookieInRestZone() {
+        return this.restZone.values().stream()
+                .anyMatch(list -> !list.isEmpty() &&
+                        ("新丁").equals(cardMap.get(list.getFirst().getCardId()).getName()));
     }
 
 }

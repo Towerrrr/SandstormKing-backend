@@ -238,7 +238,7 @@ public class Battlefield {
     private void castAttack() {
         // 进攻方出牌，直到攻击力 >= 防守力 或手牌用完
         if (attackerPower < Objects.requireNonNull(defenderPower).getValue() &&
-                attacker.hasHandCards()) {
+                attacker.hasCardInHandZone()) {
             // TODO 控制旗帜
             attackerCard = attacker.castNextCard();
             Card card = cardMap.get(attackerCard.getCardId());

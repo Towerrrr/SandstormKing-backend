@@ -1,5 +1,7 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult.ConditionAndResult;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult.ConditionAndResultParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffConfigParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPutParam;
@@ -31,6 +33,8 @@ public class Card {
     // region 技能属性
 
     private CheckAndPutParam checkAndPutParam = null;
+
+    private ConditionAndResultParam conditionAndResultParam = null;
 
     private String timeRange = null;
 
