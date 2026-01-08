@@ -65,6 +65,10 @@ public class BattleSeat {
         return this.handZone.size();
     }
 
+    public int getConsumedDeckSize() {
+        return this.consumedDeck.size();
+    }
+
     public LinkedList<CardInstance> popTopHandZone(int n) {
         LinkedList<CardInstance> result = new LinkedList<>();
         if (n <= 0 || this.handZone.isEmpty()) {

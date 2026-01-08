@@ -14,6 +14,7 @@ public class ConditionAndResult {
         ConditionAndResultParam conditionAndResultParam = card.getConditionAndResultParam();
         ConditionEnum conditionEnum = conditionAndResultParam.getConditionEnum();
         ResultEnum resultEnum = conditionAndResultParam.getResultEnum();
+        int resultIncrement = conditionAndResultParam.getResultIncrement();
 
         boolean condition = false;
         int conditionValue = 0;
@@ -35,13 +36,27 @@ public class ConditionAndResult {
                 break;
             // PER_，每...
             case PER_CONSUMED_CARD:
+                conditionValue = self.getConsumedDeckSize();
                 break;
             case OPPONENT_PER_CONSUMED_CARD:
+                conditionValue = opponent.getConsumedDeckSize();
                 break;
             case OPPONENT_PER_HAS_CUP:
+                // TODO 对手每有一个奖杯
                 break;
             default:
                 throw new RuntimeException("ConditionAndResult.apply: Unknown condition");
+        }
+
+        switch (resultEnum) {
+            case THIS_CARD_POWER:
+                // TODO
+                break;
+            case FAN_COUNT:
+                // TODO
+                break;
+            default:
+                throw new RuntimeException("ConditionAndResult.apply: Unknown result");
         }
 
     }

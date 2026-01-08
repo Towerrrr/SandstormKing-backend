@@ -9,4 +9,6 @@ public class ConditionAndResultParam {
 
     private ResultEnum resultEnum;
 
+    private int resultIncrement;
+
 }
