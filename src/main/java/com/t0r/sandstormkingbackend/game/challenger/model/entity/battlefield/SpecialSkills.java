@@ -10,9 +10,9 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class SpecialSkills {
 
-    public int calculateRealTimePower(Card card, int currentRound) {
+    public int calculateRealTimePower(Card card, String currentRound) {
         if (SpecialCardsEnum.MACHINE.getName().equals(card.getName())) {
-            return currentRound;
+            return Integer.parseInt(currentRound);
         }
         return card.getBasePower();
     }

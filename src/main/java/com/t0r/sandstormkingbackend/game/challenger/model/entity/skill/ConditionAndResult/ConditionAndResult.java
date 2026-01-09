@@ -3,7 +3,6 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.Conditio
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Power;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @UtilityClass
 public class ConditionAndResult {
 
-    public void apply(Card card, BattleSeat self, BattleSeat opponent,
+    public void apply(Card card, String currentRound, BattleSeat self, BattleSeat opponent,
                       ChallengerPlayer selfInfo, ChallengerPlayer opponentInfo, Power tempAttackerPower) {
         ConditionAndResultParam conditionAndResultParam = card.getConditionAndResultParam();
         ConditionEnum conditionEnum = conditionAndResultParam.getConditionEnum();
@@ -23,7 +22,7 @@ public class ConditionAndResult {
         int conditionValue = 0;
         switch (conditionEnum) {
             case PREVIOUS_MATCH_LOST:
-                // TODO 上一场输了
+                condition = selfInfo.isPreviousRoundLose(currentRound);
                 break;
             case HAS_CARD_UNDERNEATH:
                 condition = self.hasCardInHandZone();
@@ -53,10 +52,22 @@ public class ConditionAndResult {
 
         switch (resultEnum) {
             case THIS_CARD_POWER:
-                // TODO
+                if (conditionValue != 0) {
+                    if (resultIncrement == 1) {
+                        tempAttackerPower.add(conditionValue);
+                    }
+                    if (resultIncrement == -1) {
+                        tempAttackerPower.add(-conditionValue);
+                    }
+                }
+                if (condition) {
+                    tempAttackerPower.add(resultIncrement);
+                }
                 break;
             case FAN_COUNT:
-                // TODO
+                if (condition) {
+                    selfInfo.setExtraFanCount(selfInfo.getExtraFanCount() + resultIncrement);
+                }
                 break;
             default:
                 throw new RuntimeException("ConditionAndResult.apply: Unknown result");

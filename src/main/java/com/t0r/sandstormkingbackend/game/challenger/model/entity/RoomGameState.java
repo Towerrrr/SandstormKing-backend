@@ -147,9 +147,7 @@ public class RoomGameState {
         Deque<Map<String, String>> battlefieldArrangeQueue = new ArrayDeque<>(battlefieldArrangeCopy);
 
         for (Long userId : userIds) {
-            ChallengerPlayer challengerPlayer = new ChallengerPlayer();
-            challengerPlayer.setUserId(userId);
-            challengerPlayer.setBattlefieldSchedules(battlefieldArrangeQueue.poll());
+            ChallengerPlayer challengerPlayer = new ChallengerPlayer(userId, battlefieldArrangeQueue.poll());
             // 玩家初始手牌在 initCardInstance() 中初始化
 
             challengerPlayers.put(userId, challengerPlayer);

@@ -25,6 +25,14 @@ public enum RoundEnum {
         this.value = value;
     }
 
+    public RoundEnum getPreviousRound() {
+        int index = this.ordinal();
+        if (index == 0) {
+            return null;
+        }
+        return RoundEnum.values()[index - 1];
+    }
+
     public RoundEnum getNextRound() {
         int index = this.ordinal();
         if (index >= RoundEnum.values().length - 1) {

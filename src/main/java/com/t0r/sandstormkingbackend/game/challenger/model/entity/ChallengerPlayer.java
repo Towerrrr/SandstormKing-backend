@@ -1,5 +1,6 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.RoundEnum;
 import lombok.Data;
 
 import java.util.*;
@@ -10,7 +11,8 @@ public class ChallengerPlayer {
     private Long userId;
 
     // 回合数 -> 战场名
-    private Map<String, String> battlefieldSchedules = new HashMap<>();
+    private Map<String, String> battlefieldSchedules;
+    private Map<String, Boolean> battlefieldResults = new HashMap<>();
 
     private LinkedList<CardInstance> handCardInstances = new LinkedList<>();
 
@@ -23,5 +25,25 @@ public class ChallengerPlayer {
     private Integer extraFanCount = 0;
 
     private Integer totalFanCount = 0;
+
+    public ChallengerPlayer(Long userId, Map<String, String> battlefieldSchedules) {
+        this.userId = userId;
+        this.battlefieldSchedules = battlefieldSchedules;
+        Arrays.stream(RoundEnum.values()).forEach(roundEnum -> this.battlefieldResults.put(roundEnum.getValue(), null));
+    }
+
+    public boolean isPreviousRoundLose(String currentRound) {
+        RoundEnum current = RoundEnum.getByValue(currentRound);
+        RoundEnum previous = null;
+        if (current != null) {
+            previous = current.getPreviousRound();
+        }
+        Boolean result = null;
+        if (previous != null) {
+            result = this.battlefieldResults.get(previous.getValue());
+        }
+
+        return Boolean.FALSE.equals(result);
+    }
 
 }

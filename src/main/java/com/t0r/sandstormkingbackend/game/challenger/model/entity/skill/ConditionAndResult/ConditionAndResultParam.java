@@ -9,6 +9,10 @@ public class ConditionAndResultParam {
 
     private ResultEnum resultEnum;
 
+    /**
+     * PER_，每...，取 1 / -1
+     * 其他的种类正常加
+     */
     private int resultIncrement;
 
 }

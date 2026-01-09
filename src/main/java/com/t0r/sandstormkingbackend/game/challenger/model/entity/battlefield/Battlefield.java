@@ -29,11 +29,12 @@ public class Battlefield {
 
     Long roomId;
     // TODO 记得初始化当前回合数
-    int currentRound;
+    String currentRound;
     String name;
     String currentPhase;
 
     Map<Long, BattleSeat> halfBattlefieldMap = new HashMap<>();
+    Map<Long, ChallengerPlayer> playerMap;
 
     Long startPlayerId;
     Long elsePlayerId;
@@ -72,6 +73,7 @@ public class Battlefield {
             String playerBattlefield = challengerPlayer.getBattlefieldSchedules().get(currentRound);
             if (playerBattlefield.equals(this.name)) {
                 halfBattlefieldMap.put(challengerPlayer.getUserId(), new BattleSeat(challengerPlayer.getUserId()));
+                playerMap.put(challengerPlayer.getUserId(), challengerPlayer);
             }
         }
         this.eventPublisher = eventPublisher;
@@ -245,6 +247,8 @@ public class Battlefield {
 
             if (SpecialSkills.checkInstantWin(card, attacker)) {
                 this.winnerId = defender.getUserId();
+                playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, true);
+                playerMap.get(attacker.getUserId()).getBattlefieldResults().put(currentRound, false);
                 log.info("战斗结束，进攻方打出飞艇并触发技能，胜利者为 {}", winnerId);
                 this.currentState = BattleStateEnum.endBattle;
                 return;
@@ -311,6 +315,8 @@ public class Battlefield {
     private void checkAttackPower() {
         if (attackerPower < defenderPower.getValue()) {
             this.winnerId = defender.getUserId();
+            playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, true);
+            playerMap.get(attacker.getUserId()).getBattlefieldResults().put(currentRound, false);
             log.info("战斗结束，进攻方无多余手牌，胜利者为 {}", winnerId);
 
             this.currentState = BattleStateEnum.endBattle;
@@ -332,10 +338,13 @@ public class Battlefield {
             for (CardInstance cardInstance : downedCard) {
                 if (defender.addToRestZone(cardInstance)) {
                     this.winnerId = attacker.getUserId();
-                    battleList.add(battle);
+                    playerMap.get(attacker.getUserId()).getBattlefieldResults().put(currentRound, true);
+                    playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, false);
                     log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
 
                     this.currentState = BattleStateEnum.endBattle;
+
+                    battleList.add(battle);
                     return;
                 }
             }
