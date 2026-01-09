@@ -1,8 +1,10 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult;
 
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Power;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -10,7 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 @UtilityClass
 public class ConditionAndResult {
 
-    public void apply(Card card, BattleSeat self, BattleSeat opponent, Battlefield battlefield) {
+    public void apply(Card card, BattleSeat self, BattleSeat opponent,
+                      ChallengerPlayer selfInfo, ChallengerPlayer opponentInfo, Power tempAttackerPower) {
         ConditionAndResultParam conditionAndResultParam = card.getConditionAndResultParam();
         ConditionEnum conditionEnum = conditionAndResultParam.getConditionEnum();
         ResultEnum resultEnum = conditionAndResultParam.getResultEnum();
@@ -42,7 +45,7 @@ public class ConditionAndResult {
                 conditionValue = opponent.getConsumedDeckSize();
                 break;
             case OPPONENT_PER_HAS_CUP:
-                // TODO 对手每有一个奖杯
+                conditionValue = opponentInfo.getCupInstances().size();
                 break;
             default:
                 throw new RuntimeException("ConditionAndResult.apply: Unknown condition");
