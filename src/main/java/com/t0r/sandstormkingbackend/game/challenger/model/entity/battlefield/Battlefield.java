@@ -256,15 +256,20 @@ public class Battlefield {
             }
 
             tempAttackerPower = new Power(SpecialSkills.calculateRealTimePower(card, currentRound));
+            // TODO 鹿娃
             if (card.getTimeRange().equals(TimeRangeEnum.IMMEDIATELY.getValue())) { // 立即触发
                 ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
                 ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
                 ConditionAndResult.apply(card, currentRound, attacker, defender,
                         attackerInfo, defenderInfo, tempAttackerPower);
-            }
-            // TODO 鹿娃
 
-            this.currentState = BattleStateEnum.checkAndPut;
+                if (card.getCheckAndPutParam() != null) {
+                    this.currentState = BattleStateEnum.checkAndPut;
+                } else {
+                    this.currentState = BattleStateEnum.triggerAttackerBuffs;
+                }
+            }
+
         } else {
             battleList.add(battle); // 记录战斗过程
             this.currentState = BattleStateEnum.checkAttackPower;
@@ -328,8 +333,16 @@ public class Battlefield {
 
             this.currentState = BattleStateEnum.endBattle;
         } else {
-            // TODO 失去旗帜
-            this.currentState = BattleStateEnum.moveAttackerToRestZone;
+            // 失去旗帜
+            Card card = cardMap.get(attackerCard.getId());
+            if (card.getTimeRange().equals(TimeRangeEnum.LOSE_FLAG.getValue())) {
+                if (card.getCheckAndPutParam() != null) {
+                    this.currentState = BattleStateEnum.checkAndPut;
+                    // TODO checkAndPut 跳到 moveAttackerToRestZone 这样似乎不优雅？？？
+                } else {
+                    this.currentState = BattleStateEnum.moveAttackerToRestZone;
+                }
+            }
         }
     }
 
@@ -368,12 +381,17 @@ public class Battlefield {
             battle = new Battle();
             battle.setDefender(lastAttacker);
             defenderPower.setValue(tempAttackerPower.getValue());
-            if (lastAttackerCard.getTimeRange().equals(TimeRangeEnum.CONTROL_FLAG.getValue())) { // 夺旗成功
+            if (lastAttackerCard.getTimeRange().equals(TimeRangeEnum.CAPTURE_FLAG.getValue())) { // 夺旗成功
                 ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
                 ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
                 ConditionAndResult.apply(lastAttackerCard, currentRound, attacker, defender,
-                        attackerInfo, defenderInfo, tempAttackerPower);
+                        attackerInfo, defenderInfo, defenderPower);
             }
+            // 夺旗成功上相关 buff
+            int gainCoefficient = SpecialSkills.getGainCoefficient(lastAttackerCard);
+            BuffCallParam buffCallParam =
+                    new BuffCallParam(TimeRangeEnum.CAPTURE_FLAG.getValue(), defenderPower, lastAttackerCard, gainCoefficient);
+            attacker.triggerRestBuffs(buffCallParam);
             attackerPower = 0;
 
             BattleSeat temp = defender;

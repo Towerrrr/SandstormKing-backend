@@ -7,6 +7,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleStateEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -72,7 +73,13 @@ public class CheckAndPut {
                         putCard(response, battleSeat);
                     })
                     .then()
-                    .doOnSuccess(v -> battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs));
+                    .doOnSuccess(v -> {
+                        if (card.getTimeRange().equals(TimeRangeEnum.LOSE_FLAG.getValue())) {
+                            battlefield.setCurrentState(BattleStateEnum.moveAttackerToRestZone);
+                        } else {
+                            battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs);
+                        }
+                    });
         } else {
             return Mono.empty();
         }
