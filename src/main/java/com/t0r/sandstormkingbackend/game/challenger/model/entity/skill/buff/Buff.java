@@ -2,6 +2,7 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff;
 
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Power;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -67,7 +68,11 @@ public class Buff implements Consumer<BuffCallParam> {
                 .orElse(true);
 
         if (timeMatch && powerMatch && groupMatch && nameMatch) {
-            currentPower.add(this.extraPower * gainCoefficient);
+            if (this.timeRange != null && this.timeRange.equals(TimeRangeEnum.ATTACK.getValue())) {
+                currentPower.addTemp(this.extraPower * gainCoefficient);
+            } else {
+                currentPower.addBase(this.extraPower * gainCoefficient);
+            }
         }
     }
 

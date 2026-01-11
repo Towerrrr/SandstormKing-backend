@@ -71,14 +71,14 @@ public class ConditionAndResult {
             case THIS_CARD_POWER:
                 if (conditionValue != 0) {
                     if (resultIncrement == 1) {
-                        tempAttackerPower.add(conditionValue);
+                        tempAttackerPower.addBase(conditionValue);
                     }
                     if (resultIncrement == -1) {
-                        tempAttackerPower.add(-conditionValue);
+                        tempAttackerPower.addBase(-conditionValue);
                     }
                 }
                 if (condition) {
-                    tempAttackerPower.add(resultIncrement);
+                    tempAttackerPower.addBase(resultIncrement);
                 }
                 break;
             case FAN_COUNT:

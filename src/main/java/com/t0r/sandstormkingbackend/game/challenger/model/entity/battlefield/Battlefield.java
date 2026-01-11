@@ -246,13 +246,6 @@ public class Battlefield {
             attackerCard = attacker.castNextCard();
             Card card = cardMap.get(attackerCard.getCardId());
 
-            if (card.getTimeRange().equals(TimeRangeEnum.IMMEDIATELY.getValue())) { // 立即触发
-                ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
-                ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
-                ConditionAndResult.apply(card, currentRound, attacker, defender,
-                        attackerInfo, defenderInfo, tempAttackerPower);
-            }
-
             if (SpecialSkills.checkInstantWin(card, attacker)) {
                 this.winnerId = defender.getUserId();
                 playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, true);
@@ -263,6 +256,12 @@ public class Battlefield {
             }
 
             tempAttackerPower = new Power(SpecialSkills.calculateRealTimePower(card, currentRound));
+            if (card.getTimeRange().equals(TimeRangeEnum.IMMEDIATELY.getValue())) { // 立即触发
+                ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
+                ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
+                ConditionAndResult.apply(card, currentRound, attacker, defender,
+                        attackerInfo, defenderInfo, tempAttackerPower);
+            }
             // TODO 鹿娃
 
             this.currentState = BattleStateEnum.checkAndPut;
@@ -307,7 +306,7 @@ public class Battlefield {
     }
 
     private void applyAttackDamage() {
-        attackerPower += tempAttackerPower.getValue();
+        attackerPower += tempAttackerPower.getTempValue();
         battle.getAttacker().add(attackerCard);
 
         if (attackerPower < Objects.requireNonNull(defenderPower).getValue()) {
@@ -368,7 +367,7 @@ public class Battlefield {
             Card lastAttackerCard = cardMap.get(lastAttacker.getCardId());
             battle = new Battle();
             battle.setDefender(lastAttacker);
-            defenderPower.setValue(SpecialSkills.calculateRealTimePower(lastAttackerCard, currentRound));
+            defenderPower.setValue(tempAttackerPower.getValue());
             if (lastAttackerCard.getTimeRange().equals(TimeRangeEnum.CONTROL_FLAG.getValue())) { // 夺旗成功
                 ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
                 ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
