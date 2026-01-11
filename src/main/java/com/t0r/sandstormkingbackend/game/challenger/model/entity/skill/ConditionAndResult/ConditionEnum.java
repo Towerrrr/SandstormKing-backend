@@ -2,6 +2,8 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.Conditio
 
 public enum ConditionEnum {
 
+    NONE, // 无条件
+
     PREVIOUS_MATCH_LOST, // 上一场比赛输了
     PER_5_FAN, // 每有 5 个粉丝
 

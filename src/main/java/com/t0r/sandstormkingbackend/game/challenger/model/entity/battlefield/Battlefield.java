@@ -5,6 +5,7 @@ import com.t0r.sandstormkingbackend.game.challenger.manager.PlayerWaitManager;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult.ConditionAndResult;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffCallParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
@@ -245,6 +246,13 @@ public class Battlefield {
             attackerCard = attacker.castNextCard();
             Card card = cardMap.get(attackerCard.getCardId());
 
+            if (card.getTimeRange().equals(TimeRangeEnum.IMMEDIATELY.getValue())) { // 立即触发
+                ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
+                ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
+                ConditionAndResult.apply(card, currentRound, attacker, defender,
+                        attackerInfo, defenderInfo, tempAttackerPower);
+            }
+
             if (SpecialSkills.checkInstantWin(card, attacker)) {
                 this.winnerId = defender.getUserId();
                 playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, true);
@@ -361,7 +369,12 @@ public class Battlefield {
             battle = new Battle();
             battle.setDefender(lastAttacker);
             defenderPower.setValue(SpecialSkills.calculateRealTimePower(lastAttackerCard, currentRound));
-            // TODO 夺旗成功逻辑
+            if (lastAttackerCard.getTimeRange().equals(TimeRangeEnum.CONTROL_FLAG.getValue())) { // 夺旗成功
+                ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
+                ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
+                ConditionAndResult.apply(lastAttackerCard, currentRound, attacker, defender,
+                        attackerInfo, defenderInfo, tempAttackerPower);
+            }
             attackerPower = 0;
 
             BattleSeat temp = defender;

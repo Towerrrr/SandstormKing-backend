@@ -8,6 +8,7 @@ public enum TimeRangeEnum {
 
     PICK("当被挑选", "PICK"),
 
+    IMMEDIATELY("立即触发", "IMMEDIATELY"),
     ATTACK("攻击时", "ATTACK"),
     CONTROL_FLAG("控制旗帜", "CONTROL_FLAG"),
     FAIL_CAPTURE_FLAG("夺旗失败(无旗胜利)", "FAIL_CAPTURE_FLAG"),
