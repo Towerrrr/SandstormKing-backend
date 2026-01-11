@@ -7,6 +7,11 @@ public class ConditionAndResultParam {
 
     private ConditionEnum conditionEnum;
 
+    /**
+     * 牌组、
+     */
+    private String commonParam;
+
     private ResultEnum resultEnum;
 
     /**

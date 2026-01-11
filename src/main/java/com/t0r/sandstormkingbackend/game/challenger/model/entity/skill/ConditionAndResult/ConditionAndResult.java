@@ -15,6 +15,7 @@ public class ConditionAndResult {
                       ChallengerPlayer selfInfo, ChallengerPlayer opponentInfo, Power tempAttackerPower) {
         ConditionAndResultParam conditionAndResultParam = card.getConditionAndResultParam();
         ConditionEnum conditionEnum = conditionAndResultParam.getConditionEnum();
+        String commonParam = conditionAndResultParam.getCommonParam();
         ResultEnum resultEnum = conditionAndResultParam.getResultEnum();
         int resultIncrement = conditionAndResultParam.getResultIncrement();
 
@@ -27,6 +28,9 @@ public class ConditionAndResult {
             case HAS_CARD_UNDERNEATH:
                 condition = self.hasCardInHandZone();
                 break;
+            case HAS_X_GROUP_REST:
+                condition = self.hasGroupInRestZone(commonParam);
+                break;
             case HAND_NEARLY_EMPTY:
                 condition = self.getHandZoneSize() <= 1;
                 break;
@@ -37,12 +41,25 @@ public class ConditionAndResult {
                 condition = opponent.hasCardInConsumedDeck();
                 break;
             // PER_，每...
-            case PER_CONSUMED_CARD:
+            case PER_5_FAN:
+                conditionValue = selfInfo.getExtraFanCount() / 5;
+                break;
+            case PER_GROUP_REST:
+                conditionValue = self.getGroupCountInRestZone();
+                break;
+            case PER_POWER_REST:
+                conditionValue = self.getBasePowerCountInRestZone();
+                break;
+            case PER_CARD_CONSUMED:
                 conditionValue = self.getConsumedDeckSize();
                 break;
-            case OPPONENT_PER_CONSUMED_CARD:
+            case OPPONENT_PER_CARD_CONSUMED:
                 conditionValue = opponent.getConsumedDeckSize();
                 break;
+            case OPPONENT_PER_POWER_REST:
+                conditionValue = opponent.getBasePowerCountInRestZone();
+                break;
+
             case OPPONENT_PER_HAS_CUP:
                 conditionValue = opponentInfo.getCupInstances().size();
                 break;

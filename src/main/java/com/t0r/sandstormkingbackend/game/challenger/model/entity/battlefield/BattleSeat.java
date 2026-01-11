@@ -142,6 +142,38 @@ public class BattleSeat {
         }
     }
 
+    public boolean hasGroupInRestZone(String groupName) {
+        if (groupName == null) {
+            return false;
+        }
+
+        return this.restZone.values().stream()
+                .filter(list -> list != null && !list.isEmpty())
+                .map(list -> cardMap.get(list.getFirst().getCardId()))
+                .filter(card -> card != null && card.getGroup() != null)
+                .anyMatch(card -> groupName.equals(card.getGroup()));
+    }
+
+    public int getGroupCountInRestZone() {
+        return (int) this.restZone.values().stream()
+                .filter(list -> list != null && !list.isEmpty())
+                .map(list -> cardMap.get(list.getFirst().getCardId()))
+                .filter(card -> card != null && card.getGroup() != null)
+                .map(Card::getGroup)
+                .distinct()
+                .count();
+    }
+
+    public int getBasePowerCountInRestZone() {
+        return (int) this.restZone.values().stream()
+                .filter(list -> list != null && !list.isEmpty())
+                .map(list -> cardMap.get(list.getFirst().getCardId()))
+                .filter(card -> card != null && card.getBasePower() != null)
+                .map(Card::getBasePower)
+                .distinct()
+                .count();
+    }
+
     public boolean hasLevelCCardInRestZone() {
         return this.restZone.values().stream()
                 .anyMatch(list -> !list.isEmpty() &&
