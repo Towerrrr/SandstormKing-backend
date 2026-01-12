@@ -12,6 +12,8 @@ public class CardSelectorResponse {
 
     private String userId;
 
+
+
     private Set<Integer> selectedCardInstanceIds;
 
 }

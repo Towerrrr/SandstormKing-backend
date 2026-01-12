@@ -7,6 +7,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult.ConditionAndResult;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffCallParam;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelector;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPut;
@@ -123,7 +124,7 @@ public class Battlefield {
                         case endBattle:
                             return Mono.empty();
                         case selectCard:
-                            return selectCard(attacker)
+                            return CardSelector.apply(attackerCard, attacker, eventPublisher, this)
                                     .then(Mono.defer(this::advanceBattle));
                         case checkAndPut:
                             return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)
@@ -288,26 +289,6 @@ public class Battlefield {
         // TODO 实施“下一张卡” BUFF 技能，要结合卡的 timeRange
 
         this.currentState = BattleStateEnum.selectCard;
-    }
-
-    public Mono<Void> selectCard(BattleSeat attacker) {
-        String waitKey = "user_" + attacker.getUserId();
-
-        PlayerWaitManager playerWaitManager = SpringContextHolder.getBean(PlayerWaitManager.class);
-        Mono<CardSelectorResponse> mono = playerWaitManager.createWaitMono(waitKey, CardSelectorResponse.class)
-                .doOnCancel(() -> log.info("Wait cancelled for {}", waitKey));
-
-        // TODO 判断条件占位
-        eventPublisher.publishEvent( // 通知前端选牌
-                new CardSelectEvent(attacker.getUserId(), new CardSelectorRequest())
-        );
-
-        return mono
-                .doOnSuccess(cardSelectorResponse -> {
-                    // TODO 根据选择卡响应做响应操作
-                })
-                .then()
-                .doOnSuccess(v -> this.currentState = BattleStateEnum.applyAttackDamage);
     }
 
     private void applyAttackDamage() {

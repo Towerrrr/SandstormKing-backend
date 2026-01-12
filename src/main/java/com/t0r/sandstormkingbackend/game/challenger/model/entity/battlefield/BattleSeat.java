@@ -33,9 +33,11 @@ public class BattleSeat {
 
     // 卡牌名称 -> 卡牌实例列表
     public final static int MAX_REST_ZONE_SIZE = 6;
+    @Getter
     private Map<String, LinkedList<CardInstance>> restZone = new HashMap<>();
 
     // 消耗牌堆
+    @Getter
     private LinkedList<CardInstance> consumedDeck = new LinkedList<>();
 
     // 休息区 BUFF
