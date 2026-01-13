@@ -1,17 +1,13 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move;
 
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.RoomGameState;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardFilter.CardFilter;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.SpecialCardsEnum;
 
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager.cardMap;
 
@@ -97,7 +93,6 @@ public class Move implements Function<MoveCallParam, Boolean> {
         LinkedList<CardInstance> startObj = new LinkedList<>();
         Map<String, LinkedList<CardInstance>> mainDecks = moveCallParam.getMainDecks();
         LinkedList<CardInstance> handZone = moveCallParam.getHandZone();
-        LinkedList<CardInstance> handCardInstances = moveCallParam.getHandCardInstances();
 
         if (this.start == null && OptionalStartEnum.HAND_ZONE.getValue().equals(this.optionalStart)) {
             // TODO: 前端选择，当前不支持
@@ -116,15 +111,12 @@ public class Move implements Function<MoveCallParam, Boolean> {
                         break;
                     case A_MAIN_DECK:
                         moveCards(mainDecks.get(LevelEnum.A.getValue()), startObj, true, this.count);
-                        moveToHand(handCardInstances, startObj);
                         break;
                     case B_MAIN_DECK:
                         moveCards(mainDecks.get(LevelEnum.B.getValue()), startObj, true, this.count);
-                        moveToHand(handCardInstances, startObj);
                         break;
                     case C_MAIN_DECK:
                         moveCards(mainDecks.get(LevelEnum.C.getValue()), startObj, true, this.count);
-                        moveToHand(handCardInstances, startObj);
                         break;
                     default:
                         throw new RuntimeException("move start error");
@@ -143,16 +135,11 @@ public class Move implements Function<MoveCallParam, Boolean> {
         }
     }
 
-    private void moveToHand(LinkedList<CardInstance> handCardInstances, LinkedList<CardInstance> cards) {
-        handCardInstances.addAll(cards);
-    }
-
     private void moveToEnd(LinkedList<CardInstance> cards, MoveCallParam moveCallParam) {
         LinkedList<CardInstance> handZone = moveCallParam.getHandZone();
         Map<String, LinkedList<CardInstance>> restZone = moveCallParam.getRestZone();
         LinkedList<CardInstance> consumedDeck = moveCallParam.getConsumedDeck();
         Map<String, LinkedList<CardInstance>> discardDecks = moveCallParam.getDiscardDecks();
-        LinkedList<CardInstance> handCardInstances = moveCallParam.getHandCardInstances();
 
         switch (this.end) {
             case HAND_ZONE_TOP:
@@ -172,8 +159,10 @@ public class Move implements Function<MoveCallParam, Boolean> {
                 }
                 break;
             case DISCARD_DECK:
-                Set<Integer> cardIds = cards.stream().map(CardInstance::getId).collect(Collectors.toSet());
-                RoomGameState.discardCardInstances(handCardInstances, cardIds, discardDecks);
+                for (CardInstance card : cards) {
+                    String level = cardMap.get(card.getCardId()).getLevel();
+                    discardDecks.get(level).add(card);
+                }
                 break;
             default:
                 throw new RuntimeException("move end error");

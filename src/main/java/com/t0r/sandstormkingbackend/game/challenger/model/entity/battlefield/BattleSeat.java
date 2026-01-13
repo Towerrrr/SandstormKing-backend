@@ -1,6 +1,5 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield;
 
-import com.t0r.sandstormkingbackend.Util.MyListUtil;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.Buff;
@@ -34,11 +33,11 @@ public class BattleSeat {
     // 卡牌名称 -> 卡牌实例列表
     public final static int MAX_REST_ZONE_SIZE = 6;
     @Getter
-    private Map<String, LinkedList<CardInstance>> restZone = new HashMap<>();
+    private final Map<String, LinkedList<CardInstance>> restZone = new HashMap<>();
 
     // 消耗牌堆
     @Getter
-    private LinkedList<CardInstance> consumedDeck = new LinkedList<>();
+    private final LinkedList<CardInstance> consumedDeck = new LinkedList<>();
 
     // 休息区 BUFF
     List<Consumer<BuffCallParam>> restBuffs = new ArrayList<>();
@@ -46,9 +45,34 @@ public class BattleSeat {
     Consumer<BuffCallParam> nextBuff = null;
 
     public void initHandZone(LinkedList<CardInstance> originalHand) {
-        // TODO 这里有没有多套一层？？
-        LinkedList<CardInstance> shuffled = MyListUtil.shuffleLinkedList(originalHand);
-        this.handZone.addAll(shuffled);
+        if (originalHand == null || originalHand.isEmpty()) {
+            return;
+        }
+
+        Collections.shuffle(originalHand);
+        this.handZone.addAll(originalHand);
+        originalHand.clear();
+    }
+
+    public void recallAllCards(LinkedList<CardInstance> originalHand) {
+        if (originalHand == null) {
+            return;
+        }
+
+        originalHand.addAll(this.handZone);
+        this.handZone.clear();
+        originalHand.addAll(this.consumedDeck);
+        this.consumedDeck.clear();
+
+        for (LinkedList<CardInstance> cardList : this.restZone.values()) {
+            if (cardList != null && !cardList.isEmpty()) {
+                originalHand.addAll(cardList);
+            }
+        }
+        this.restZone.clear();
+        this.restBuffs.clear();
+
+        originalHand.sort(Comparator.comparing(CardInstance::getId));
     }
 
     public CardInstance castNextCard() {

@@ -2,7 +2,6 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.json.JSONUtil;
-import com.t0r.sandstormkingbackend.Util.MyListUtil;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
@@ -320,8 +319,8 @@ public class RoomGameState {
         final int DRAW_COUNT = 5;
 
         if (mainDecks.get(level).size() < DRAW_COUNT) {
-            LinkedList<CardInstance> shuffledDiscardDeck = MyListUtil.shuffleLinkedList(discardDecks.get(level));
-            mainDecks.get(level).addAll(shuffledDiscardDeck);
+            Collections.shuffle(discardDecks.get(level));
+            mainDecks.get(level).addAll(discardDecks.get(level));
             discardDecks.get(level).clear();
         }
 
