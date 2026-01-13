@@ -1,10 +1,12 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move;
 
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardFilter.CardFilter;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.SpecialCardsEnum;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.function.Function;
@@ -14,7 +16,7 @@ import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGam
 /**
  * 返回值：是否成功移动
  */
-public class Move implements Function<MoveCallParam, Boolean> {
+public class Move implements Function<BattleSeat, Boolean> {
 
     // 根据 target 来决定要选入的 MoveCallParam
 //    private String target;
@@ -79,20 +81,26 @@ public class Move implements Function<MoveCallParam, Boolean> {
     }
 
     @Override
-    public Boolean apply(MoveCallParam moveCallParam) {
+    public Boolean apply(BattleSeat battleSeat) {
 
-        LinkedList<CardInstance> startObj = getStartCards(moveCallParam);
+        LinkedList<CardInstance> startObj = getStartCards(battleSeat);
 
         // TODO: 这里可以插入 maxCount、type、filter 相关处理
 
-        moveToEnd(startObj, moveCallParam);
+        moveToEnd(startObj, battleSeat);
         return true;
     }
 
-    private LinkedList<CardInstance> getStartCards(MoveCallParam moveCallParam) {
+    public Boolean apply(BattleSeat battleSeat, CardInstance cardInstance) {
+        LinkedList<CardInstance> startObj = new LinkedList<>(Collections.singletonList(cardInstance));
+        moveToEnd(startObj, battleSeat);
+        return true;
+    }
+
+    private LinkedList<CardInstance> getStartCards(BattleSeat battleSeat) {
         LinkedList<CardInstance> startObj = new LinkedList<>();
-        Map<String, LinkedList<CardInstance>> mainDecks = moveCallParam.getMainDecks();
-        LinkedList<CardInstance> handZone = moveCallParam.getHandZone();
+        Map<String, LinkedList<CardInstance>> mainDecks = battleSeat.getMainDecks();
+        LinkedList<CardInstance> handZone = battleSeat.getHandZone();
 
         if (this.start == null && OptionalStartEnum.HAND_ZONE.getValue().equals(this.optionalStart)) {
             // TODO: 前端选择，当前不支持
@@ -135,11 +143,11 @@ public class Move implements Function<MoveCallParam, Boolean> {
         }
     }
 
-    private void moveToEnd(LinkedList<CardInstance> cards, MoveCallParam moveCallParam) {
-        LinkedList<CardInstance> handZone = moveCallParam.getHandZone();
-        Map<String, LinkedList<CardInstance>> restZone = moveCallParam.getRestZone();
-        LinkedList<CardInstance> consumedDeck = moveCallParam.getConsumedDeck();
-        Map<String, LinkedList<CardInstance>> discardDecks = moveCallParam.getDiscardDecks();
+    private void moveToEnd(LinkedList<CardInstance> cards, BattleSeat battleSeat) {
+        LinkedList<CardInstance> handZone = battleSeat.getHandZone();
+        Map<String, LinkedList<CardInstance>> restZone = battleSeat.getRestZone();
+        LinkedList<CardInstance> consumedDeck = battleSeat.getConsumedDeck();
+        Map<String, LinkedList<CardInstance>> discardDecks = battleSeat.getDiscardDecks();
 
         switch (this.end) {
             case HAND_ZONE_TOP:

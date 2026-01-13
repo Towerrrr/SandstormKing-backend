@@ -5,6 +5,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardFilte
 import lombok.Data;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,9 +19,7 @@ public class CardSelectorRequest {
      */
     private Boolean isOptional = false;
 
-    private Map<String, LinkedList<CardInstance>> restZone = null;
-
-    private LinkedList<CardInstance> handZoneOrConsumedDeck = null;
+    private List<CardInstance> candidateCards;
 
     private Integer count;
     private Integer maxCount;

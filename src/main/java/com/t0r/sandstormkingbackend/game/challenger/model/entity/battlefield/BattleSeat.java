@@ -23,6 +23,11 @@ public class BattleSeat {
     private final Long userId;
 
     @Getter
+    private final Map<String, LinkedList<CardInstance>> mainDecks;
+    @Getter
+    private final Map<String, LinkedList<CardInstance>> discardDecks;
+
+    @Getter
     @Setter
     // 战斗前构筑是否就绪
     private boolean isReady = false;
@@ -140,7 +145,9 @@ public class BattleSeat {
         if (cards == null || cards.isEmpty()) {
             return;
         }
-        this.consumedDeck.addAll(cards);
+        for (CardInstance card : cards) {
+            Move.toConsumedDeck(card, this.consumedDeck, this.handZone);
+        }
     }
 
     public boolean addToRestZone(CardInstance cardInstance) {
@@ -155,6 +162,24 @@ public class BattleSeat {
         return this.restZone.size() > MAX_REST_ZONE_SIZE;
     }
 
+    public CardInstance removeCardFromRestZone(Integer instanceId) {
+        for (LinkedList<CardInstance> cardList : this.restZone.values()) {
+            if (cardList == null || cardList.isEmpty()) {
+                continue;
+            }
+
+            Iterator<CardInstance> it = cardList.iterator();
+            while (it.hasNext()) {
+                CardInstance card = it.next();
+                if (card.getId().equals(instanceId)) {
+                    it.remove();
+                    return card;
+                }
+            }
+        }
+        return null;
+    }
+
     public void triggerRestBuffs(BuffCallParam param) {
         for (Consumer<BuffCallParam> buff : this.restBuffs) {
             buff.accept(param);
@@ -166,6 +191,22 @@ public class BattleSeat {
             this.nextBuff.accept(param);
             this.nextBuff = null;
         }
+    }
+
+    public LinkedList<CardInstance> getAllCardsInRestZone() {
+        LinkedList<CardInstance> allCards = new LinkedList<>();
+
+        if (this.restZone.isEmpty()) {
+            return allCards;
+        }
+
+        for (LinkedList<CardInstance> cardList : this.restZone.values()) {
+            if (cardList != null && !cardList.isEmpty()) {
+                allCards.addAll(cardList);
+            }
+        }
+
+        return allCards;
     }
 
     public boolean hasGroupInRestZone(String groupName) {

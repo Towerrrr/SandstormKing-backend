@@ -7,6 +7,9 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleStateEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Power;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult.ConditionAndResultParam;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult.ResultEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveConfigParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.OptionalStartEnum;
@@ -18,14 +21,18 @@ import org.springframework.context.ApplicationEventPublisher;
 import reactor.core.publisher.Mono;
 
 
+import java.util.Iterator;
+import java.util.List;
+
 import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager.cardMap;
 
+// TODO 修改类名
 @Slf4j
 @UtilityClass
 public class CardSelector {
 
-    public Mono<Void> apply(CardInstance cardInstance, BattleSeat self,
-                            ApplicationEventPublisher eventPublisher, Battlefield battlefield) {
+    public Mono<Void> apply(CardInstance cardInstance, BattleSeat self, ApplicationEventPublisher eventPublisher,
+                            Battlefield battlefield, Power tempAttackerPower) {
         String waitKey = "user_" + self.getUserId();
 
         PlayerWaitManager playerWaitManager = SpringContextHolder.getBean(PlayerWaitManager.class);
@@ -40,25 +47,36 @@ public class CardSelector {
 
         return mono
                 .doOnSuccess(cardSelectorResponse -> {
-                    CardSelectorParam cardSelectorParam = card.getCardSelectorParam();
-                    MoveConfigParam moveConfigParam = card.getMoveConfigParam();
-                    // TODO 移动或结果...
+                    moveOrResult(card, cardSelectorResponse, self, tempAttackerPower);
                 })
                 .then()
-                .doOnSuccess(v -> battlefield.setCurrentState(BattleStateEnum.applyAttackDamage));
+                .doOnSuccess(v -> battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs));
     }
 
-    private void moveOrResult(CardSelectorParam cardSelectorParam, CardSelectorResponse cardSelectorResponse,
-                              CardSelectorRequest cardSelectorRequest, MoveConfigParam moveConfigParam, BattleSeat self) {
+    private void moveOrResult(Card card, CardSelectorResponse cardSelectorResponse, BattleSeat self, Power tempAttackerPower) {
         String userId = cardSelectorResponse.getUserId();
         if (cardSelectorResponse.getIsTrigger().equals(Boolean.FALSE)) {
             log.info("用户 {} 选择不触发卡牌效果", userId);
             return;
         }
 
-        Integer selectedCardInstanceId = cardSelectorResponse.getSelectedCardInstanceId();
-        Move move = new Move(moveConfigParam);
-        // TODO 后续未实现...
+        CardSelectorParam cardSelectorParam = card.getCardSelectorParam();
+        MoveConfigParam moveConfigParam = card.getMoveConfigParam();
+        if (moveConfigParam != null) {
+            Integer selectedCardInstanceId = cardSelectorResponse.getSelectedCardInstanceId();
+            Move move = new Move(moveConfigParam);
+            CardInstance cardInstance = removeCardInstance(self, cardSelectorParam.getOptionalStart(), selectedCardInstanceId);
+            move.apply(self, cardInstance);
+        }
+
+        ConditionAndResultParam conditionAndResultParam = card.getConditionAndResultParam();
+        if (conditionAndResultParam != null) {
+            ResultEnum resultEnum = conditionAndResultParam.getResultEnum();
+            int resultIncrement = conditionAndResultParam.getResultIncrement();
+            if (ResultEnum.THIS_CARD_POWER.equals(resultEnum)) {
+                tempAttackerPower.addBase(resultIncrement);
+            }
+        }
 
     }
 
@@ -77,13 +95,13 @@ public class CardSelector {
         } else {
             switch (optionalStart) {
                 case HAND_ZONE:
-                    cardSelectorRequest.setHandZoneOrConsumedDeck(attacker.getHandZone());
+                    cardSelectorRequest.setCandidateCards(attacker.getHandZone());
                     break;
                 case CONSUMED_DECK:
-                    cardSelectorRequest.setHandZoneOrConsumedDeck(attacker.getConsumedDeck());
+                    cardSelectorRequest.setCandidateCards(attacker.getConsumedDeck());
                     break;
                 case REST_ZONE:
-                    cardSelectorRequest.setRestZone(attacker.getRestZone());
+                    cardSelectorRequest.setCandidateCards(attacker.getAllCardsInRestZone());
                     break;
                 default:
                     throw new RuntimeException("optionalStart error");
@@ -94,6 +112,42 @@ public class CardSelector {
         cardSelectorRequest.setMaxCount(cardSelectorParam.getMaxCount());
         cardSelectorRequest.setCardFilter(cardSelectorParam.getCardFilter());
         return cardSelectorRequest;
+    }
+
+    private CardInstance removeCardInstance(BattleSeat seat, OptionalStartEnum zone, Integer instanceId) {
+        CardInstance targetCard = null;
+
+        switch (zone) {
+            case HAND_ZONE:
+                targetCard = findAndRemoveFromList(seat.getHandZone(), instanceId);
+                break;
+            case CONSUMED_DECK:
+                targetCard = findAndRemoveFromList(seat.getConsumedDeck(), instanceId);
+                break;
+            case REST_ZONE:
+                targetCard = seat.removeCardFromRestZone(instanceId);
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown zone: " + zone);
+        }
+
+        if (targetCard == null) {
+            throw new IllegalArgumentException("Card " + instanceId + " not found in " + zone);
+        }
+
+        return targetCard;
+    }
+
+    private CardInstance findAndRemoveFromList(List<CardInstance> list, Integer instanceId) {
+        Iterator<CardInstance> it = list.iterator();
+        while (it.hasNext()) {
+            CardInstance card = it.next();
+            if (card.getId().equals(instanceId)) {
+                it.remove();
+                return card;
+            }
+        }
+        return null;
     }
 
 }

@@ -35,6 +35,9 @@ public class Card {
 
     private String timeRange = null;
 
+    // TODO 所有技能判断的地方进行修改
+    private String skillType = null;
+
     private CheckAndPutParam checkAndPutParam = null;
 
     private ConditionAndResultParam conditionAndResultParam = null;

@@ -1,18 +1,13 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield;
 
-import com.t0r.sandstormkingbackend.Util.SpringContextHolder;
-import com.t0r.sandstormkingbackend.game.challenger.manager.PlayerWaitManager;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult.ConditionAndResult;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffCallParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelector;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorRequest;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPut;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.*;
-import com.t0r.sandstormkingbackend.game.challenger.model.event.CardSelectEvent;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.EndBattleEvent;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -67,14 +62,15 @@ public class Battlefield {
     // endregion
 
     public Battlefield(Long roomId, String name, String currentRound, Map<Long, ChallengerPlayer> challengerPlayers,
-                       ApplicationEventPublisher eventPublisher) {
+                       ApplicationEventPublisher eventPublisher,
+                       Map<String, LinkedList<CardInstance>> mainDecks, Map<String, LinkedList<CardInstance>> discardDecks) {
         this.roomId = roomId;
         this.name = name;
         this.currentPhase = PhaseEnum.BUILD.getValue();
         for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
             String playerBattlefield = challengerPlayer.getBattlefieldSchedules().get(currentRound);
             if (playerBattlefield.equals(this.name)) {
-                halfBattlefieldMap.put(challengerPlayer.getUserId(), new BattleSeat(challengerPlayer.getUserId()));
+                halfBattlefieldMap.put(challengerPlayer.getUserId(), new BattleSeat(challengerPlayer.getUserId(), mainDecks, discardDecks));
                 playerMap.put(challengerPlayer.getUserId(), challengerPlayer);
             }
         }
@@ -124,7 +120,7 @@ public class Battlefield {
                         case endBattle:
                             return Mono.empty();
                         case selectCard:
-                            return CardSelector.apply(attackerCard, attacker, eventPublisher, this)
+                            return CardSelector.apply(attackerCard, attacker, eventPublisher, this, tempAttackerPower)
                                     .then(Mono.defer(this::advanceBattle));
                         case checkAndPut:
                             return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)
@@ -259,12 +255,14 @@ public class Battlefield {
             tempAttackerPower = new Power(SpecialSkills.calculateRealTimePower(card, currentRound));
             // TODO 鹿娃
             if (card.getTimeRange().equals(TimeRangeEnum.IMMEDIATELY.getValue())) { // 立即触发
-                if (card.getCheckAndPutParam() != null) {
-                    ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
-                    ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
-                    ConditionAndResult.apply(card, currentRound, attacker, defender,
-                            attackerInfo, defenderInfo, tempAttackerPower);
+                // TODO 在这里根据技能类型的不同执行对应的技能
 
+                ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
+                ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
+                ConditionAndResult.apply(card, currentRound, attacker, defender,
+                        attackerInfo, defenderInfo, tempAttackerPower);
+
+                if (card.getCheckAndPutParam() != null) {
                     this.currentState = BattleStateEnum.checkAndPut;
                 } else {
                     this.currentState = BattleStateEnum.triggerAttackerBuffs;
@@ -293,7 +291,7 @@ public class Battlefield {
 
         // TODO 实施“下一张卡” BUFF 技能，要结合卡的 timeRange
 
-        this.currentState = BattleStateEnum.selectCard;
+        this.currentState = BattleStateEnum.applyAttackDamage;
     }
 
     private void applyAttackDamage() {
@@ -389,6 +387,10 @@ public class Battlefield {
     }
 
     private void endBattle() {
+        for (ChallengerPlayer player : playerMap.values()) {
+            halfBattlefieldMap.get(player.getUserId()).recallAllCards(player.getHandCardInstances());
+        }
+
         eventPublisher.publishEvent(new EndBattleEvent(this.roomId, this.name, this.winnerId));
     }
 
