@@ -13,9 +13,14 @@ import java.util.Map;
 @Data
 public class CardSelectorRequest {
 
-    private Map<String, LinkedList<CardInstance>> restZone;
+    /**
+     * 默认必选，部分卡可不选。
+     */
+    private Boolean isOptional = false;
 
-    private LinkedList<CardInstance> handZoneOrConsumedDeck;
+    private Map<String, LinkedList<CardInstance>> restZone = null;
+
+    private LinkedList<CardInstance> handZoneOrConsumedDeck = null;
 
     private Integer count;
     private Integer maxCount;

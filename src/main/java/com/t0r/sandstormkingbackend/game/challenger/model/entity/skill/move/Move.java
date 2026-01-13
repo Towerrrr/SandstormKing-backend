@@ -2,6 +2,7 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move;
 
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.RoomGameState;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardFilter.CardFilter;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.SpecialCardsEnum;
@@ -19,23 +20,32 @@ import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGam
  */
 public class Move implements Function<MoveCallParam, Boolean> {
 
-    private String permission;
-
     // 根据 target 来决定要选入的 MoveCallParam
 //    private String target;
 
-    private String optionalStart;
-    private StartEnum start;
+    private final String optionalStart;
+    private final StartEnum start;
+    // TODO 待处理
     private CardInstance thisCard;
 
-    private Integer count;
-    private Integer maxCount;
+    private final Integer count;
+    private final Integer maxCount;
 
-    private String type;
+    private final String type;
 
-    private CardFilter cardFilter;
+    private final CardFilter cardFilter;
 
-    private EndEnum end;
+    private final EndEnum end;
+
+    public Move(MoveConfigParam moveConfigParam) {
+        this.optionalStart = moveConfigParam.getOptionalStart();
+        this.start = StartEnum.getByValue(moveConfigParam.getStart());
+        this.count = moveConfigParam.getCount();
+        this.maxCount = moveConfigParam.getMaxCount();
+        this.type = moveConfigParam.getType();
+        this.cardFilter = moveConfigParam.getCardFilter();
+        this.end = EndEnum.getByValue(moveConfigParam.getEnd());
+    }
 
     /**
      * “背包客”技能在这里实现
@@ -74,9 +84,6 @@ public class Move implements Function<MoveCallParam, Boolean> {
 
     @Override
     public Boolean apply(MoveCallParam moveCallParam) {
-        if (!checkPermission()) {
-            throw new RuntimeException("move permission error");
-        }
 
         LinkedList<CardInstance> startObj = getStartCards(moveCallParam);
 
@@ -84,11 +91,6 @@ public class Move implements Function<MoveCallParam, Boolean> {
 
         moveToEnd(startObj, moveCallParam);
         return true;
-    }
-
-    private boolean checkPermission() {
-        return PermissionEnum.OPTIONAL.getValue().equals(this.permission)
-                || PermissionEnum.MUST.getValue().equals(this.permission);
     }
 
     private LinkedList<CardInstance> getStartCards(MoveCallParam moveCallParam) {

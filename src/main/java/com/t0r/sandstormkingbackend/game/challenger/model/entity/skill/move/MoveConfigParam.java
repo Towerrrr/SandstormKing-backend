@@ -6,8 +6,6 @@ import lombok.Data;
 @Data
 public class MoveConfigParam {
 
-    private String permission = PermissionEnum.MUST.getValue();
-
     private String target = TargetEnum.SELF.getValue();
 
     private String optionalStart;

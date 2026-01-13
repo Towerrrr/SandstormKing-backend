@@ -259,15 +259,20 @@ public class Battlefield {
             tempAttackerPower = new Power(SpecialSkills.calculateRealTimePower(card, currentRound));
             // TODO 鹿娃
             if (card.getTimeRange().equals(TimeRangeEnum.IMMEDIATELY.getValue())) { // 立即触发
-                ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
-                ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
-                ConditionAndResult.apply(card, currentRound, attacker, defender,
-                        attackerInfo, defenderInfo, tempAttackerPower);
-
                 if (card.getCheckAndPutParam() != null) {
+                    ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
+                    ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
+                    ConditionAndResult.apply(card, currentRound, attacker, defender,
+                            attackerInfo, defenderInfo, tempAttackerPower);
+
                     this.currentState = BattleStateEnum.checkAndPut;
                 } else {
                     this.currentState = BattleStateEnum.triggerAttackerBuffs;
+                }
+            }
+            if (card.getTimeRange().equals(TimeRangeEnum.OPTIONAL.getValue())) { // 可选的
+                if (card.getCardSelectorParam() != null) {
+                    // TODO 可选待实现
                 }
             }
 

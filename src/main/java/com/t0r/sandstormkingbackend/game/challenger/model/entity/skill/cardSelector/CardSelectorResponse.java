@@ -12,8 +12,14 @@ public class CardSelectorResponse {
 
     private String userId;
 
+    /**
+     * null 必定触发的技能，
+     * true 玩家选择触发技能，
+     * false 玩家选择不触发技能。
+     */
+    Boolean isTrigger = null;
 
-
-    private Set<Integer> selectedCardInstanceIds;
+    // TODO 目前先实现 1 张卡的技能
+    private Integer selectedCardInstanceId;
 
 }

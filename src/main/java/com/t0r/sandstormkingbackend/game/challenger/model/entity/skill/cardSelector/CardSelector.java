@@ -7,7 +7,10 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleStateEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveConfigParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.OptionalStartEnum;
+import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.CardSelectEvent;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -21,30 +24,53 @@ import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGam
 @UtilityClass
 public class CardSelector {
 
-    public Mono<Void> apply(CardInstance cardInstance, BattleSeat attacker,
+    public Mono<Void> apply(CardInstance cardInstance, BattleSeat self,
                             ApplicationEventPublisher eventPublisher, Battlefield battlefield) {
-        String waitKey = "user_" + attacker.getUserId();
+        String waitKey = "user_" + self.getUserId();
 
         PlayerWaitManager playerWaitManager = SpringContextHolder.getBean(PlayerWaitManager.class);
         Mono<CardSelectorResponse> mono = playerWaitManager.createWaitMono(waitKey, CardSelectorResponse.class)
                 .doOnCancel(() -> log.info("Wait cancelled for {}", waitKey));
 
         Card card = cardMap.get(cardInstance.getCardId());
+        CardSelectorRequest cardSelectorRequest = buildRequest(card.getTimeRange(), card.getCardSelectorParam(), self);
         eventPublisher.publishEvent( // 通知前端选牌
-                new CardSelectEvent(attacker.getUserId(), buildRequest(card.getCardSelectorParam(), attacker))
+                new CardSelectEvent(self.getUserId(), cardSelectorRequest)
         );
 
         return mono
                 .doOnSuccess(cardSelectorResponse -> {
-                    // TODO 根据选择卡响应做响应操作
+                    CardSelectorParam cardSelectorParam = card.getCardSelectorParam();
+                    MoveConfigParam moveConfigParam = card.getMoveConfigParam();
+                    // TODO 移动或结果...
                 })
                 .then()
                 .doOnSuccess(v -> battlefield.setCurrentState(BattleStateEnum.applyAttackDamage));
     }
 
-    private CardSelectorRequest buildRequest(CardSelectorParam cardSelectorParam,
+    private void moveOrResult(CardSelectorParam cardSelectorParam, CardSelectorResponse cardSelectorResponse,
+                              CardSelectorRequest cardSelectorRequest, MoveConfigParam moveConfigParam, BattleSeat self) {
+        String userId = cardSelectorResponse.getUserId();
+        if (cardSelectorResponse.getIsTrigger().equals(Boolean.FALSE)) {
+            log.info("用户 {} 选择不触发卡牌效果", userId);
+            return;
+        }
+
+        Integer selectedCardInstanceId = cardSelectorResponse.getSelectedCardInstanceId();
+        Move move = new Move(moveConfigParam);
+        // TODO 后续未实现...
+
+    }
+
+    private CardSelectorRequest buildRequest(String timeRangeEnum,
+                                             CardSelectorParam cardSelectorParam,
                                              BattleSeat attacker) {
         CardSelectorRequest cardSelectorRequest = new CardSelectorRequest();
+
+        if (timeRangeEnum.equals(TimeRangeEnum.OPTIONAL.getValue())) {
+            cardSelectorRequest.setIsOptional(true);
+        }
+
         OptionalStartEnum optionalStart = cardSelectorParam.getOptionalStart();
         if (optionalStart == null) {
             throw new RuntimeException("optionalStart is null");
