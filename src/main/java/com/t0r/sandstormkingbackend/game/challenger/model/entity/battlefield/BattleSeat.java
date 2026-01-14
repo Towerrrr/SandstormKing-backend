@@ -170,10 +170,14 @@ public class BattleSeat {
 
             Iterator<CardInstance> it = cardList.iterator();
             while (it.hasNext()) {
-                CardInstance card = it.next();
-                if (card.getId().equals(instanceId)) {
+                CardInstance cardInstance = it.next();
+                if (cardInstance.getId().equals(instanceId)) {
+                    Card card = cardMap.get(cardInstance.getCardId());
+                    if (BuffTypeEnum.REST.getValue().equals(card.getBuffType())) {
+                        removeBuffByCardId(card.getId());
+                    }
                     it.remove();
-                    return card;
+                    return cardInstance;
                 }
             }
         }
@@ -190,6 +194,24 @@ public class BattleSeat {
         if (this.nextBuff != null) {
             this.nextBuff.accept(param);
             this.nextBuff = null;
+        }
+    }
+
+    private void removeBuffByCardId(Integer cardId) {
+        if (cardId == null || this.restBuffs.isEmpty()) {
+            return;
+        }
+
+        Iterator<Consumer<BuffCallParam>> iterator = this.restBuffs.iterator();
+        while (iterator.hasNext()) {
+            Consumer<BuffCallParam> consumer = iterator.next();
+            if (consumer instanceof Buff) {
+                Buff buff = (Buff) consumer;
+                if (cardId.equals(buff.getCardId())) {
+                    iterator.remove();
+                    return;
+                }
+            }
         }
     }
 

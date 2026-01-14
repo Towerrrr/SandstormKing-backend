@@ -3,11 +3,18 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Power;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
+import lombok.Getter;
 
 import java.util.Optional;
 import java.util.function.Consumer;
 
 public class Buff implements Consumer<BuffCallParam> {
+
+    /**
+     * 用于去除 buff 的时候判断
+     */
+    @Getter
+    private final Integer cardId;
 
     /**
      * 与 currentTimeRange 判断
@@ -37,6 +44,7 @@ public class Buff implements Consumer<BuffCallParam> {
     public Buff(Card card) {
         BuffConfigParam buffConfigParam = card.getBuffConfigParam();
 
+        this.cardId = card.getId();
         this.timeRange = buffConfigParam.getTimeRange();
         this.basePower = buffConfigParam.getBasePower();
         this.group = buffConfigParam.getGroup();

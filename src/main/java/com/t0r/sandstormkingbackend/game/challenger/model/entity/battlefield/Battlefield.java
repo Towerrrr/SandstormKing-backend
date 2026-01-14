@@ -25,7 +25,6 @@ import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGam
 public class Battlefield {
 
     Long roomId;
-    // TODO 记得初始化当前回合数
     String currentRound;
     String name;
     String currentPhase;
@@ -65,6 +64,7 @@ public class Battlefield {
                        ApplicationEventPublisher eventPublisher,
                        Map<String, LinkedList<CardInstance>> mainDecks, Map<String, LinkedList<CardInstance>> discardDecks) {
         this.roomId = roomId;
+        this.currentRound = currentRound;
         this.name = name;
         this.currentPhase = PhaseEnum.BUILD.getValue();
         for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
