@@ -7,6 +7,8 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.Condition
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffCallParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelector;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPut;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveConfigParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.*;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.EndBattleEvent;
 import lombok.Data;
@@ -254,26 +256,34 @@ public class Battlefield {
 
             tempAttackerPower = new Power(SpecialSkills.calculateRealTimePower(card, currentRound));
             // TODO 鹿娃
-            if (card.getTimeRange().equals(TimeRangeEnum.IMMEDIATELY.getValue())) { // 立即触发
-                // TODO 在这里根据技能类型的不同执行对应的技能
 
-                ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
-                ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
-                ConditionAndResult.apply(card, currentRound, attacker, defender,
-                        attackerInfo, defenderInfo, tempAttackerPower);
+            this.currentState = BattleStateEnum.triggerAttackerBuffs;
 
-                if (card.getCheckAndPutParam() != null) {
+            if (card.getTimeRange().equals(TimeRangeEnum.IMMEDIATELY.getValue())) { // TimeRange：立即触发
+                if (SkillTypeEnum.CONDITION_AND_RESULT.getValue().equals(card.getSkillType())) {
+                    ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
+                    ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
+                    ConditionAndResult.apply(card, currentRound, attacker, defender,
+                            attackerInfo, defenderInfo, tempAttackerPower);
+                }
+                if (SkillTypeEnum.CHECK_AND_MOVE_RESULT.getValue().equals(card.getSkillType())) {
                     this.currentState = BattleStateEnum.checkAndPut;
-                } else {
-                    this.currentState = BattleStateEnum.triggerAttackerBuffs;
+                }
+                if (SkillTypeEnum.SELECTOR_AND_MOVE.getValue().equals(card.getSkillType())) {
+                    this.currentState = BattleStateEnum.selectCard;
+                }
+                if (SkillTypeEnum.IMMEDIATELY_MOVE.getValue().equals(card.getSkillType())) {
+                    MoveConfigParam moveConfigParam = card.getMoveConfigParam();
+                    if (moveConfigParam != null) {
+                        Move move = new Move(moveConfigParam);
+                        move.apply(attacker);
+                    }
                 }
             }
-            if (card.getTimeRange().equals(TimeRangeEnum.OPTIONAL.getValue())) { // 可选的
-                if (card.getCardSelectorParam() != null) {
-                    // TODO 可选待实现
-                }
+            if (card.getTimeRange().equals(TimeRangeEnum.OPTIONAL.getValue())) { // TimeRange：可选的
+                // 当前可选的技能全都是选择卡牌
+                this.currentState = BattleStateEnum.selectCard;
             }
-
         } else {
             battleList.add(battle); // 记录战斗过程
             this.currentState = BattleStateEnum.checkAttackPower;
@@ -317,7 +327,7 @@ public class Battlefield {
 
             this.currentState = BattleStateEnum.endBattle;
         } else {
-            // 失去旗帜
+            // TimeRange：失去旗帜
             Card card = cardMap.get(attackerCard.getId());
             if (card.getTimeRange().equals(TimeRangeEnum.LOSE_FLAG.getValue())) {
                 if (card.getCheckAndPutParam() != null) {
