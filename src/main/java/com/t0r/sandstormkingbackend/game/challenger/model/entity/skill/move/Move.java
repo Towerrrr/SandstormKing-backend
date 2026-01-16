@@ -1,5 +1,7 @@
 package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move;
 
+import com.t0r.sandstormkingbackend.exception.ErrorCode;
+import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardFilter.CardFilter;
@@ -17,9 +19,6 @@ import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGam
  * 返回值：是否成功移动
  */
 public class Move implements Function<BattleSeat, Boolean> {
-
-    // 根据 target 来决定要选入的 MoveCallParam
-//    private String target;
 
     private final String optionalStart;
     private final StartEnum start;
@@ -94,6 +93,13 @@ public class Move implements Function<BattleSeat, Boolean> {
     public Boolean apply(BattleSeat battleSeat, CardInstance cardInstance) {
         LinkedList<CardInstance> startObj = new LinkedList<>(Collections.singletonList(cardInstance));
         moveToEnd(startObj, battleSeat);
+        return true;
+    }
+
+    public Boolean apply(BattleSeat battleSeat, LinkedList<CardInstance> cardInstances) {
+        ThrowUtils.throwIf(cardInstances.size() > this.maxCount,
+                ErrorCode.PARAMS_ERROR, "选择的卡牌数不可超过" + this.maxCount);
+        moveToEnd(cardInstances, battleSeat);
         return true;
     }
 

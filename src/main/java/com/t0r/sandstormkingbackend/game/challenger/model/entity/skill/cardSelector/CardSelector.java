@@ -12,6 +12,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.Condition
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult.ResultEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveConfigParam;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveTargetEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.OptionalStartEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.CardSelectEvent;
@@ -22,7 +23,9 @@ import reactor.core.publisher.Mono;
 
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager.cardMap;
 
@@ -31,23 +34,28 @@ import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGam
 @UtilityClass
 public class CardSelector {
 
-    public Mono<Void> apply(CardInstance cardInstance, BattleSeat self, ApplicationEventPublisher eventPublisher,
+    public Mono<Void> apply(CardInstance cardInstance, BattleSeat self, BattleSeat opponent,
+                            ApplicationEventPublisher eventPublisher,
                             Battlefield battlefield, Power tempAttackerPower) {
-        String waitKey = "user_" + self.getUserId();
+        Card card = cardMap.get(cardInstance.getCardId());
+        CardSelectorParam cardSelectorParam = card.getCardSelectorParam();
+        BattleSeat selectTarget = cardSelectorParam.getSelectTargetEnum().equals(SelectTargetEnum.SELF) ? self : opponent;
+        String waitKey = "user_" + selectTarget.getUserId();
 
         PlayerWaitManager playerWaitManager = SpringContextHolder.getBean(PlayerWaitManager.class);
         Mono<CardSelectorResponse> mono = playerWaitManager.createWaitMono(waitKey, CardSelectorResponse.class)
                 .doOnCancel(() -> log.info("Wait cancelled for {}", waitKey));
 
-        Card card = cardMap.get(cardInstance.getCardId());
-        CardSelectorRequest cardSelectorRequest = buildRequest(card.getTimeRange(), card.getCardSelectorParam(), self);
+        MoveTargetEnum moveTargetEnum = card.getMoveTargetEnum();
+        BattleSeat moveTarget = MoveTargetEnum.SELF.equals(card.getMoveTargetEnum()) ? self : opponent;
+        CardSelectorRequest cardSelectorRequest = buildRequest(card.getTimeRange(), cardSelectorParam, moveTarget);
         eventPublisher.publishEvent( // 通知前端选牌
-                new CardSelectEvent(self.getUserId(), cardSelectorRequest)
+                new CardSelectEvent(selectTarget.getUserId(), cardSelectorRequest)
         );
 
         return mono
                 .doOnSuccess(cardSelectorResponse -> {
-                    moveOrResult(card, cardSelectorResponse, self, tempAttackerPower);
+                    moveOrResult(card, cardSelectorResponse, moveTarget, tempAttackerPower);
                 })
                 .then()
                 .doOnSuccess(v -> battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs));
@@ -63,10 +71,18 @@ public class CardSelector {
         CardSelectorParam cardSelectorParam = card.getCardSelectorParam();
         MoveConfigParam moveConfigParam = card.getMoveConfigParam();
         if (moveConfigParam != null) {
-            Integer selectedCardInstanceId = cardSelectorResponse.getSelectedCardInstanceId();
             Move move = new Move(moveConfigParam);
-            CardInstance cardInstance = removeCardInstance(self, cardSelectorParam.getOptionalStart(), selectedCardInstanceId);
-            move.apply(self, cardInstance);
+            Integer selectedCardInstanceId = cardSelectorResponse.getSelectedCardInstanceId();
+            if (selectedCardInstanceId != null) {
+                CardInstance cardInstance = removeCardInstance(self, cardSelectorParam.getOptionalStart(), selectedCardInstanceId);
+                move.apply(self, cardInstance);
+            }
+            Set<Integer> selectedCardInstanceIds = cardSelectorResponse.getSelectedCardInstanceIds();
+            if (selectedCardInstanceIds != null && !selectedCardInstanceIds.isEmpty()) {
+                LinkedList<CardInstance> cardInstances = removeCardInstances(self, cardSelectorParam.getOptionalStart(), selectedCardInstanceIds);
+
+                move.apply(self, cardInstances);
+            }
         }
 
         ConditionAndResultParam conditionAndResultParam = card.getConditionAndResultParam();
@@ -82,7 +98,7 @@ public class CardSelector {
 
     private CardSelectorRequest buildRequest(String timeRangeEnum,
                                              CardSelectorParam cardSelectorParam,
-                                             BattleSeat attacker) {
+                                             BattleSeat seat) {
         CardSelectorRequest cardSelectorRequest = new CardSelectorRequest();
 
         if (timeRangeEnum.equals(TimeRangeEnum.OPTIONAL.getValue())) {
@@ -95,13 +111,13 @@ public class CardSelector {
         } else {
             switch (optionalStart) {
                 case HAND_ZONE:
-                    cardSelectorRequest.setCandidateCards(attacker.getHandZone());
+                    cardSelectorRequest.setCandidateCards(seat.getHandZone());
                     break;
                 case CONSUMED_DECK:
-                    cardSelectorRequest.setCandidateCards(attacker.getConsumedDeck());
+                    cardSelectorRequest.setCandidateCards(seat.getConsumedDeck());
                     break;
                 case REST_ZONE:
-                    cardSelectorRequest.setCandidateCards(attacker.getAllCardsInRestZone());
+                    cardSelectorRequest.setCandidateCards(seat.getAllCardsInRestZone());
                     break;
                 default:
                     throw new RuntimeException("optionalStart error");
@@ -136,6 +152,19 @@ public class CardSelector {
         }
 
         return targetCard;
+    }
+
+    private LinkedList<CardInstance> removeCardInstances(BattleSeat seat, OptionalStartEnum zone, Set<Integer> instanceIds) {
+        LinkedList<CardInstance> resultList = new LinkedList<>();
+        if (instanceIds == null || instanceIds.isEmpty()) {
+            return resultList;
+        }
+
+        for (Integer id : instanceIds) {
+            CardInstance card = removeCardInstance(seat, zone, id);
+            resultList.add(card);
+        }
+        return resultList;
     }
 
     private CardInstance findAndRemoveFromList(List<CardInstance> list, Integer instanceId) {

@@ -9,6 +9,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelec
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPut;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveConfigParam;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveTargetEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.*;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.EndBattleEvent;
 import lombok.Data;
@@ -122,7 +123,7 @@ public class Battlefield {
                         case endBattle:
                             return Mono.empty();
                         case selectCard:
-                            return CardSelector.apply(attackerCard, attacker, eventPublisher, this, tempAttackerPower)
+                            return CardSelector.apply(attackerCard, attacker, defender, eventPublisher, this, tempAttackerPower)
                                     .then(Mono.defer(this::advanceBattle));
                         case checkAndPut:
                             return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)
@@ -276,7 +277,11 @@ public class Battlefield {
                     MoveConfigParam moveConfigParam = card.getMoveConfigParam();
                     if (moveConfigParam != null) {
                         Move move = new Move(moveConfigParam);
-                        move.apply(attacker);
+                        if (MoveTargetEnum.OPPONENT.equals(card.getMoveTargetEnum())) {
+                            move.apply(defender);
+                        } else { // 默认移动自己的
+                            move.apply(attacker);
+                        }
                     }
                 }
             }
@@ -375,7 +380,7 @@ public class Battlefield {
             battle = new Battle();
             battle.setDefender(lastAttacker);
             defenderPower.setValue(tempAttackerPower.getValue());
-            if (lastAttackerCard.getTimeRange().equals(TimeRangeEnum.CAPTURE_FLAG.getValue())) { // 夺旗成功
+            if (lastAttackerCard.getTimeRange().equals(TimeRangeEnum.CAPTURE_FLAG.getValue())) { // TimeRange：夺旗成功
                 ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
                 ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
                 ConditionAndResult.apply(lastAttackerCard, currentRound, attacker, defender,

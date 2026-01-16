@@ -19,7 +19,8 @@ public class CardSelectorResponse {
      */
     Boolean isTrigger = null;
 
-    // TODO 目前先实现 1 张卡的技能
-    private Integer selectedCardInstanceId;
+    private Integer selectedCardInstanceId = null;
+
+    private Set<Integer> selectedCardInstanceIds = null;
 
 }
