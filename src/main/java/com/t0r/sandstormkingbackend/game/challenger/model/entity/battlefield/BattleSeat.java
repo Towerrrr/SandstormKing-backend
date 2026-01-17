@@ -263,6 +263,21 @@ public class BattleSeat {
                 .count();
     }
 
+    public int getCardCountByGroupInRestZone(String group) {
+        if (group == null) {
+            return 0;
+        }
+
+        return this.restZone.values().stream()
+                .filter(list -> list != null && !list.isEmpty())
+                .filter(list -> {
+                    Card card = cardMap.get(list.getFirst().getCardId());
+                    return card != null && group.equals(card.getGroup());
+                })
+                .mapToInt(LinkedList::size)
+                .sum();
+    }
+
     public boolean hasLevelCCardInRestZone() {
         return this.restZone.values().stream()
                 .anyMatch(list -> !list.isEmpty() &&

@@ -44,8 +44,11 @@ public class ConditionAndResult {
             case PER_5_FAN:
                 conditionValue = selfInfo.getExtraFanCount() / 5;
                 break;
-            case PER_GROUP_REST:
+            case PER_DIFF_GROUP_REST:
                 conditionValue = self.getGroupCountInRestZone();
+                break;
+            case PER_SAME_GROUP_REST:
+                conditionValue = self.getCardCountByGroupInRestZone(card.getGroup());
                 break;
             case PER_POWER_REST:
                 conditionValue = self.getBasePowerCountInRestZone();

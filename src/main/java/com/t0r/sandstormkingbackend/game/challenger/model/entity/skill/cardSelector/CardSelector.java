@@ -46,7 +46,6 @@ public class CardSelector {
         Mono<CardSelectorResponse> mono = playerWaitManager.createWaitMono(waitKey, CardSelectorResponse.class)
                 .doOnCancel(() -> log.info("Wait cancelled for {}", waitKey));
 
-        MoveTargetEnum moveTargetEnum = card.getMoveTargetEnum();
         BattleSeat moveTarget = MoveTargetEnum.SELF.equals(card.getMoveTargetEnum()) ? self : opponent;
         CardSelectorRequest cardSelectorRequest = buildRequest(card.getTimeRange(), cardSelectorParam, moveTarget);
         eventPublisher.publishEvent( // 通知前端选牌
@@ -61,7 +60,7 @@ public class CardSelector {
                 .doOnSuccess(v -> battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs));
     }
 
-    private void moveOrResult(Card card, CardSelectorResponse cardSelectorResponse, BattleSeat self, Power tempAttackerPower) {
+    private void moveOrResult(Card card, CardSelectorResponse cardSelectorResponse, BattleSeat seat, Power tempAttackerPower) {
         String userId = cardSelectorResponse.getUserId();
         if (cardSelectorResponse.getIsTrigger().equals(Boolean.FALSE)) {
             log.info("用户 {} 选择不触发卡牌效果", userId);
@@ -74,14 +73,14 @@ public class CardSelector {
             Move move = new Move(moveConfigParam);
             Integer selectedCardInstanceId = cardSelectorResponse.getSelectedCardInstanceId();
             if (selectedCardInstanceId != null) {
-                CardInstance cardInstance = removeCardInstance(self, cardSelectorParam.getOptionalStart(), selectedCardInstanceId);
-                move.apply(self, cardInstance);
+                CardInstance cardInstance = removeCardInstance(seat, cardSelectorParam.getOptionalStart(), selectedCardInstanceId);
+                move.apply(seat, cardInstance);
             }
             Set<Integer> selectedCardInstanceIds = cardSelectorResponse.getSelectedCardInstanceIds();
             if (selectedCardInstanceIds != null && !selectedCardInstanceIds.isEmpty()) {
-                LinkedList<CardInstance> cardInstances = removeCardInstances(self, cardSelectorParam.getOptionalStart(), selectedCardInstanceIds);
+                LinkedList<CardInstance> cardInstances = removeCardInstances(seat, cardSelectorParam.getOptionalStart(), selectedCardInstanceIds);
 
-                move.apply(self, cardInstances);
+                move.apply(seat, cardInstances);
             }
         }
 

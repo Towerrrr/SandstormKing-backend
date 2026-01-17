@@ -10,7 +10,8 @@ public enum ConditionEnum {
     HAS_CARD_UNDERNEATH, // 这张卡下面有卡
     HAND_NEARLY_EMPTY, // 手牌区剩 0 或 1 张卡
     HAS_X_GROUP_REST, // 休息区有某牌组
-    PER_GROUP_REST, // 休息区每有不同套牌
+    PER_DIFF_GROUP_REST, // 休息区每有不同套牌
+    PER_SAME_GROUP_REST, // 休息区每有相同套牌（和这张触发技能的卡相同的牌组）
     PER_POWER_REST, // 休息区每有不同基础力量值
     PER_CARD_CONSUMED, // 消耗牌堆每有 1 张卡
     OPPONENT_REST_HAS_ROOKIE, // 对手休息区有新丁
