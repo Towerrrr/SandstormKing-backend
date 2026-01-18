@@ -5,7 +5,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.ChallengerPlayer;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult.ConditionAndResult;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffCallParam;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelector;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.selectAndMoveOrResult.SelectAndMoveOrResult;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPut;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveConfigParam;
@@ -123,7 +123,7 @@ public class Battlefield {
                         case endBattle:
                             return Mono.empty();
                         case selectCard:
-                            return CardSelector.apply(attackerCard, attacker, defender, eventPublisher, this, tempAttackerPower)
+                            return SelectAndMoveOrResult.apply(attackerCard, attacker, defender, eventPublisher, this, tempAttackerPower)
                                     .then(Mono.defer(this::advanceBattle));
                         case checkAndPut:
                             return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)

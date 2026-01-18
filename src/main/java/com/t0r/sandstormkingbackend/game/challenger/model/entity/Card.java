@@ -2,7 +2,7 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity;
 
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.ConditionAndResult.ConditionAndResultParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffConfigParam;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector.CardSelectorParam;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.selectAndMoveOrResult.CardSelectorParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPutParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveConfigParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveTargetEnum;

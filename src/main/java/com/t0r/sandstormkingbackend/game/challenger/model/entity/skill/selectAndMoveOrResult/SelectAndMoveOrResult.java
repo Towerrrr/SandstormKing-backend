@@ -1,4 +1,4 @@
-package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector;
+package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.selectAndMoveOrResult;
 
 import com.t0r.sandstormkingbackend.Util.SpringContextHolder;
 import com.t0r.sandstormkingbackend.game.challenger.manager.PlayerWaitManager;
@@ -29,10 +29,9 @@ import java.util.Set;
 
 import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager.cardMap;
 
-// TODO 修改类名
 @Slf4j
 @UtilityClass
-public class CardSelector {
+public class SelectAndMoveOrResult {
 
     public Mono<Void> apply(CardInstance cardInstance, BattleSeat self, BattleSeat opponent,
                             ApplicationEventPublisher eventPublisher,

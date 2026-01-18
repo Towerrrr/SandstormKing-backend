@@ -1,4 +1,4 @@
-package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardSelector;
+package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.selectAndMoveOrResult;
 
 import lombok.Data;
 
