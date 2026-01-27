@@ -9,6 +9,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class PlayerWaitManager {
     private final ConcurrentHashMap<String, MonoSink<?>> waitMap = new ConcurrentHashMap<>();
+    
+    public <T> void completeWait(String key, T value) {
+        completeWaitMono(key, value);
+    }
 
     public <T> Mono<T> createWaitMono(String key, Class<T> clazz) {
         return Mono.create(sink -> {

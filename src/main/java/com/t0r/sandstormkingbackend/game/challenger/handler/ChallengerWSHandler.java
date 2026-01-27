@@ -142,8 +142,8 @@ public class ChallengerWSHandler {
     private MessageBroadcastTypeEnum handleInitGameMessage(GameMessage gameMessage, Set<WebSocketSession> webSocketSessions) throws Exception {
         String body = gameMessage.getBody();
         InitGameRequest initGameRequest = JSONUtil.toBean(body, InitGameRequest.class);
-        Map<Integer, Card> cardMap = challengerGameManager.initGame(initGameRequest, webSocketSessions);
-        gameMessage.setBody(JSONUtil.toJsonStr(cardMap));
+        // Map<Integer, Card> cardMap = challengerGameManager.initGame(initGameRequest, webSocketSessions);
+        // gameMessage.setBody(JSONUtil.toJsonStr(cardMap));
         return MessageBroadcastTypeEnum.ALL;
     }
 
