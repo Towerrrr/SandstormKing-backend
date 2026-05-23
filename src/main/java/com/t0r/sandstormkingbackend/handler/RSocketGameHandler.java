@@ -68,8 +68,10 @@ public class RSocketGameHandler {
         Long ownerId = roomOwnerId.get(roomId);
         if (ownerId == null) { // 创建房间
             roomOwnerId.put(roomId, userId);
-            roomPlayers.putIfAbsent(roomId, ConcurrentHashMap.newKeySet());
+            roomPlayers.computeIfAbsent(roomId, id -> ConcurrentHashMap.newKeySet()).add(userId);
         } else { // 加入房间
+            roomPlayers.computeIfAbsent(roomId, id -> ConcurrentHashMap.newKeySet()).add(userId);
+
             // 构造响应
             WSMessage wsMessage = new WSMessage();
             wsMessage.setType(WSMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
@@ -78,7 +80,6 @@ public class RSocketGameHandler {
 
             broadcast(roomId, wsMessage);
         }
-        roomPlayers.get(roomId).add(userId);
 
         return Mono.empty();
     }
@@ -107,6 +108,7 @@ public class RSocketGameHandler {
         Set<Long> userIds = roomPlayers.get(roomId);
         if (userIds == null)
             return;
+        log.info("房间 {} 当前玩家 ：{}", roomId, userIds);
         for (Long userId : userIds) {
             if (userId.equals(excludeUserId))
                 continue;
