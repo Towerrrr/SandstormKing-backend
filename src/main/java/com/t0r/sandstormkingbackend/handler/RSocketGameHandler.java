@@ -51,6 +51,7 @@ public class RSocketGameHandler {
                 .doOnTerminate(() -> {
                     userRequesters.remove(userId);
                     userSinks.remove(userId);
+                    challengerSinks.remove(userId);
                 })
                 .subscribe();
     }
@@ -104,9 +105,11 @@ public class RSocketGameHandler {
     public void broadcast(Long roomId, WSMessage wsMessage, Long excludeUserId) {
         log.info("广播消息，房间：{}", roomId);
         Set<Long> userIds = roomPlayers.get(roomId);
-        if (userIds == null) return;
+        if (userIds == null)
+            return;
         for (Long userId : userIds) {
-            if (userId.equals(excludeUserId)) continue;
+            if (userId.equals(excludeUserId))
+                continue;
             Sinks.Many<WSMessage> sink = userSinks.get(userId);
             if (sink != null) {
                 sink.tryEmitNext(wsMessage);
@@ -124,6 +127,13 @@ public class RSocketGameHandler {
         if (sink != null) {
             sink.tryEmitNext(wsMessage);
         }
+    }
+
+    public void sendChallengerMessage(Long userId, GameMessage gameMessage) {
+        log.info("接受用户：{}，发送挑战消息：{}", userId, gameMessage);
+        Sinks.Many<GameMessage> sink = challengerSinks.computeIfAbsent(userId,
+                id -> Sinks.many().multicast().onBackpressureBuffer());
+        sink.tryEmitNext(gameMessage);
     }
 
     @MessageMapping("game.receive")

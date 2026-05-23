@@ -7,8 +7,9 @@ import java.util.Set;
 @Data
 public class BuildDeckRequest {
 
+    private Long roomId;
+    private Long userId;
     private Integer optionId;
-
     private Set<Integer> selectedCardInstanceIds;
 
 }

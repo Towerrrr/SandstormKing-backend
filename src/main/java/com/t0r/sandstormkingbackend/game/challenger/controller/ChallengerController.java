@@ -182,7 +182,7 @@ public class ChallengerController {
 
     public void notifyPlayerWaitOpponent(Long userId, Long opponentId) {
         GameMessage gameMessage = new GameMessage();
-        gameMessage.setType(ChallengerMessageTypeEnum.WAIT_OPPONENT.getValue());
+        gameMessage.setType(ChallengerMessageTypeEnum.WAIT_OPPONENT_READY.getValue());
         gameMessage.setBody(String.valueOf(opponentId));
         rSocketGameHandler.sendChallengerMessage(userId, gameMessage);
     }
@@ -196,7 +196,7 @@ public class ChallengerController {
 
     public void notifyPlayerCardSelect(Long userId, CardSelectorRequest cardSelectorRequest) {
         GameMessage gameMessage = new GameMessage();
-        gameMessage.setType(ChallengerMessageTypeEnum.CARD_SELECT.getValue());
+        gameMessage.setType(ChallengerMessageTypeEnum.SELECT_CARD.getValue());
         gameMessage.setBody(JSONUtil.toJsonStr(cardSelectorRequest));
         rSocketGameHandler.sendChallengerMessage(userId, gameMessage);
     }
