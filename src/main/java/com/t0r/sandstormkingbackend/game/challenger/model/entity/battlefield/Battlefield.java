@@ -33,7 +33,7 @@ public class Battlefield {
     String currentPhase;
 
     Map<Long, BattleSeat> halfBattlefieldMap = new HashMap<>();
-    Map<Long, ChallengerPlayer> playerMap;
+    Map<Long, ChallengerPlayer> playerMap = new HashMap<>();
 
     Long startPlayerId;
     Long elsePlayerId;

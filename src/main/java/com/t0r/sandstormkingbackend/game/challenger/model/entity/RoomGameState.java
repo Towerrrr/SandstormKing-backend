@@ -74,7 +74,7 @@ public class RoomGameState {
     // region 构造方法
 
     public RoomGameState(InitGameRequest initGameRequest, ApplicationEventPublisher eventPublisher) {
-        log.info("初始化房间: {}, 游戏：挑战者", roomId);
+        log.info("初始化游戏：挑战者");
 
         // 不变域
         this.roomId = initGameRequest.getRoomId();
