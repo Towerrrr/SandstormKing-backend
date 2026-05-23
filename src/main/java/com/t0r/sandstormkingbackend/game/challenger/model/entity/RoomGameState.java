@@ -31,7 +31,7 @@ import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGam
 @Slf4j
 public class RoomGameState {
 
-//    region 不变域
+    // region 不变域
 
     private Long roomId;
 
@@ -50,9 +50,9 @@ public class RoomGameState {
 
     // TODO 直接解析玩家中的战场属性来分配战场
 
-//    endregion
+    // endregion
 
-//    region 变化域
+    // region 变化域
 
     private String currentRound;
 
@@ -63,16 +63,15 @@ public class RoomGameState {
     private Map<String, CupInstanceDeck> cupInstances = new ConcurrentHashMap<>();
 
     // 牌堆等级 -> 卡牌实例 （主牌堆、弃牌堆）
-    private Map<String, LinkedList<CardInstance>> mainDecks = new ConcurrentHashMap<>();
-    private Map<String, LinkedList<CardInstance>> discardDecks = new ConcurrentHashMap<>();
+    private DeckManager deckManager;
 
     // 用于临时战斗
     // 战场名 -> 战场
     private Map<String, Battlefield> tempBattlefields = new ConcurrentHashMap<>();
 
-//    endregion
+    // endregion
 
-//    region 构造方法
+    // region 构造方法
 
     public RoomGameState(InitGameRequest initGameRequest, ApplicationEventPublisher eventPublisher) {
         log.info("初始化房间: {}, 游戏：挑战者", roomId);
@@ -94,6 +93,8 @@ public class RoomGameState {
 
         this.version = initGameRequest.getVersion();
         loadDrawSchedule();
+        // 初始化牌堆管理
+        this.deckManager = new DeckManager(cardMap);
         this.eventPublisher = eventPublisher;
 
         // 变化域
@@ -132,9 +133,9 @@ public class RoomGameState {
         }
     }
 
-//    endregion
+    // endregion
 
-//    region 初始化变化域
+    // region 初始化变化域
 
     public void initChallengerPlayers(Set<Long> userIds) {
         log.info("初始化房间 {} 的玩家信息", roomId);
@@ -156,48 +157,9 @@ public class RoomGameState {
     public void initCardInstance() {
         log.info("初始化房间 {} 的卡牌实例", roomId);
 
-        int localId = 1;
+        int total = deckManager.initCardInstances(challengerPlayers);
 
-        for (LevelEnum level : LevelEnum.values()) {
-            if (level.isKept()) {
-                mainDecks.put(level.getValue(), new LinkedList<>()); // 主牌堆
-                discardDecks.put(level.getValue(), new LinkedList<>()); // 弃牌堆
-            }
-        }
-
-        for (Card card : cardMap.values()) {
-            String cardLevel = card.getLevel();
-            LevelEnum levelEnum = LevelEnum.getEnumByValue(cardLevel);
-
-            if (levelEnum != null && levelEnum.isKept()) {
-                int count = card.getCount() != null ? card.getCount() : 1;
-                for (int i = 0; i < count; i++) {
-                    CardInstance instance = new CardInstance();
-                    instance.setId(localId++);
-                    instance.setCardId(card.getId());
-                    mainDecks.get(cardLevel).add(instance);
-                }
-            } else if (levelEnum != null) {
-                for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
-                    for (int i = 0; i < card.getCount(); i++) {
-                        CardInstance instance = new CardInstance();
-                        instance.setId(localId++);
-                        instance.setCardId(card.getId());
-                        challengerPlayer.getHandCardInstances().add(instance);
-                    }
-                }
-            }
-        }
-
-        // 打乱主牌堆
-        LevelEnum[] levelEnums = LevelEnum.values();
-        for (LevelEnum levelEnum : levelEnums) {
-            if (levelEnum.isKept()) {
-                Collections.shuffle(mainDecks.get(levelEnum.getValue()));
-            }
-        }
-
-        log.info("房间 {} 的卡牌实例初始化成功，共 {} 张", roomId, localId - 1);
+        log.info("房间 {} 的卡牌实例初始化成功，共 {} 张", roomId, total);
     }
 
     public void initCupInstance() {
@@ -215,7 +177,8 @@ public class RoomGameState {
 
             Map<String, CupInstanceDeck> cupInstances = getCupInstances();
 
-            List<CupInstanceDeck> cupInstanceDeckList = JSONUtil.toList(JSONUtil.parseArray(jsonStr), CupInstanceDeck.class);
+            List<CupInstanceDeck> cupInstanceDeckList = JSONUtil.toList(JSONUtil.parseArray(jsonStr),
+                    CupInstanceDeck.class);
             for (CupInstanceDeck cupInstanceDeck : cupInstanceDeckList) {
                 cupInstanceDeck.parseCupInstance();
 
@@ -232,7 +195,7 @@ public class RoomGameState {
         }
     }
 
-//    endregion
+    // endregion
 
     public void resetBattlefield() {
         log.info("重置房间 {} 的战场", roomId);
@@ -243,19 +206,21 @@ public class RoomGameState {
             BattlefieldEnum battlefieldEnum = battlefieldEnums[i];
             tempBattlefields.put(battlefieldEnum.getValue(),
                     new Battlefield(this.roomId, battlefieldEnum.getValue(), currentRound,
-                            challengerPlayers, eventPublisher, mainDecks, discardDecks));
+                            challengerPlayers, eventPublisher, deckManager.getMainDecks(),
+                            deckManager.getDiscardDecks()));
         }
 
     }
 
-//    region 构筑阶段
+    // region 构筑阶段
 
     /**
      * 1. 选择选项（第一次抽卡）
      * 2. 确认选择 / 再次抽卡 / 部分选择 & 再次抽卡
      * 3. 确认选择
      */
-    public LinkedList<CardInstance> buildCardInstances(Long userId, Integer OptionId, Set<Integer> selectedCardInstanceIds) {
+    public LinkedList<CardInstance> buildCardInstances(Long userId, Integer OptionId,
+            Set<Integer> selectedCardInstanceIds) {
         log.info("用户 {} 构筑卡牌, 选项 {}", userId, OptionId);
 
         ChallengerPlayer currentPlayer = challengerPlayers.get(userId);
@@ -319,30 +284,12 @@ public class RoomGameState {
     private void drawCardInstances(ChallengerPlayer currentPlayer, String level) {
         final int DRAW_COUNT = 5;
 
-        if (mainDecks.get(level).size() < DRAW_COUNT) {
-            Collections.shuffle(discardDecks.get(level));
-            mainDecks.get(level).addAll(discardDecks.get(level));
-            discardDecks.get(level).clear();
-        }
-
-        for (int i = 0; i < DRAW_COUNT; i++) {
-            CardInstance cardInstance = mainDecks.get(level).removeFirst();
-            currentPlayer.getTempSelectedCardInstances().add(cardInstance);
-        }
+        LinkedList<CardInstance> draws = deckManager.draw(level, DRAW_COUNT);
+        currentPlayer.getTempSelectedCardInstances().addAll(draws);
     }
 
     private void selectAndDiscardCardInstances(ChallengerPlayer currentPlayer, Set<Integer> selectedCardInstanceIds) {
-        LinkedList<CardInstance> tempSelectedCardInstances = currentPlayer.getTempSelectedCardInstances();
-        Set<CardInstance> selectedCards = currentPlayer.getSelectedCards();
-        for (CardInstance cardInstance : tempSelectedCardInstances) {
-            String level = cardMap.get(cardInstance.getCardId()).getLevel();
-            if (selectedCardInstanceIds != null && selectedCardInstanceIds.contains(cardInstance.getId())) {
-                selectedCards.add(cardInstance);
-            } else {
-                discardDecks.get(level).add(cardInstance);
-            }
-        }
-        tempSelectedCardInstances.clear();
+        deckManager.processSelection(currentPlayer, selectedCardInstanceIds);
     }
 
     public void readyBattle(String battlefield, Long userId) {
@@ -358,28 +305,26 @@ public class RoomGameState {
             StartBattleResponse startBattleResponse = new StartBattleResponse(startPlayerId, startWay, battleList);
 
             eventPublisher.publishEvent(
-                    new StartBattleEvent(userId, opponentId, startBattleResponse)
-            );
+                    new StartBattleEvent(userId, opponentId, startBattleResponse));
         } else {
             log.info("用户 {} 确认准备，等待对手 {}", userId, opponentId);
             eventPublisher.publishEvent(
-                    new PlayerReadyEvent(userId, opponentId)
-            );
+                    new PlayerReadyEvent(userId, opponentId));
         }
     }
 
-//    endregion
+    // endregion
 
     public void discardCardInstances(Long userId, Set<Integer> cardInstanceIds) {
         log.info("用户 {} 弃牌 {}", userId, cardInstanceIds);
 
         LinkedList<CardInstance> handCardInstances = challengerPlayers.get(userId).getHandCardInstances();
-        discardCardInstances(handCardInstances, cardInstanceIds, this.discardDecks);
+        deckManager.discardFromHand(handCardInstances, cardInstanceIds);
     }
 
     public static void discardCardInstances(LinkedList<CardInstance> handCardInstances,
-                                            Set<Integer> cardInstanceIds,
-                                            Map<String, LinkedList<CardInstance>> discardDecks) {
+            Set<Integer> cardInstanceIds,
+            Map<String, LinkedList<CardInstance>> discardDecks) {
         Iterator<CardInstance> iterator = handCardInstances.iterator();
         while (iterator.hasNext()) {
             CardInstance cardInstance = iterator.next();
@@ -393,13 +338,11 @@ public class RoomGameState {
         }
     }
 
-
     public void award(String battlefield, Long winnerId) {
         log.info("房间 {} 当前回合 {} 战场 {} 颁奖", roomId, battlefield, currentRound);
 
         LinkedList<CupInstance> cupInstanceList = cupInstances.get(currentRound).getCupInstanceList();
         challengerPlayers.get(winnerId).getCupInstances().add(cupInstanceList.removeFirst());
-
 
         if (tempBattlefields.values().stream()
                 .allMatch(battlefieldName -> battlefieldName.getCurrentState() == BattleStateEnum.endBattle)) {
@@ -409,7 +352,6 @@ public class RoomGameState {
 
     }
 
-
     public void nextRound() {
         log.info("房间 {} 进入下一轮", roomId);
 
@@ -417,13 +359,10 @@ public class RoomGameState {
         ThrowUtils.throwIf(currentRound == RoundEnum.getLastRound(),
                 ErrorCode.PARAMS_ERROR, "已经是最后一轮了");
         this.currentRound = Objects.requireNonNull(
-                Objects.requireNonNull(currentRound).getNextRound()
-        ).getValue();
+                Objects.requireNonNull(currentRound).getNextRound()).getValue();
 
         resetBattlefield();
         log.info("房间 {} 进入第 {} 轮", roomId, this.currentRound);
     }
 
-
 }
-
