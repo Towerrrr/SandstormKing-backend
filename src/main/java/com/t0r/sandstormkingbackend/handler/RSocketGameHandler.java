@@ -146,13 +146,16 @@ public class RSocketGameHandler {
         return sink.asFlux();
     }
 
+    /**
+     *  消息包括：用户准备状态改变、
+     */
     @MessageMapping("message")
     public Mono<Void> handleMessage(ForwardedMessageRequest forwardedMessageRequest) {
         Long userId = forwardedMessageRequest.getUserId();
         Long roomId = forwardedMessageRequest.getRoomId();
         WSMessage wsMessage = forwardedMessageRequest.getWsMessage();
         log.info("用户：{}，发送并转发到所属房间消息：{}", userId, wsMessage);
-        broadcast(roomId, wsMessage, userId);
+        broadcast(roomId, wsMessage);
         return Mono.empty();
     }
 
