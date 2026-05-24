@@ -50,13 +50,6 @@ public class ChallengerController {
 
     // ==================== Request-Response 端点 ====================
 
-    @MessageMapping("challenger.initGame")
-    public Mono<Map<Integer, Card>> initGame(@Payload InitGameRequest initGameRequest) {
-        log.info("初始化游戏，房间：{}", initGameRequest.getRoomId());
-        Map<Integer, Card> cardMap = challengerGameManager.initGame(initGameRequest);
-        return Mono.just(cardMap);
-    }
-
     @MessageMapping("challenger.getPlayer")
     public Mono<ChallengerPlayerSelf> getPlayer(@Payload GetPlayerRequest request) {
         Long roomId = request.getRoomId();

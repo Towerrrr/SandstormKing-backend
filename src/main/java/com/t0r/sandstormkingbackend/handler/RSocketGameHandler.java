@@ -2,6 +2,9 @@ package com.t0r.sandstormkingbackend.handler;
 
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
+import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
 import com.t0r.sandstormkingbackend.model.dto.game.WSMessage;
 import com.t0r.sandstormkingbackend.model.dto.rSocket.ForwardedMessageRequest;
@@ -17,6 +20,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
+import javax.annotation.Resource;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -28,6 +32,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Controller
 @Slf4j
 public class RSocketGameHandler {
+
+    @Resource
+    private ChallengerGameManager challengerGameManager;
 
     private final Map<Long, Long> roomOwnerId = new ConcurrentHashMap<>();
     // key: roomId, value: set of userIds
@@ -98,6 +105,21 @@ public class RSocketGameHandler {
         wsMessage.setType(WSMessageTypeEnum.ROOM_STATE_CHANGED.getValue());
         wsMessage.setDescription(userName + "离开房间");
         broadcast(roomId, wsMessage);
+
+        return Mono.empty();
+    }
+
+    @MessageMapping("game.startGame")
+    public Mono<Void> startGame(InitGameRequest initGameRequest) {
+        log.info("初始化游戏，房间：{}", initGameRequest.getRoomId());
+        Map<Integer, Card> cardMap = challengerGameManager.initGame(initGameRequest);
+
+        // 广播开始游戏
+        WSMessage wsMessage = new WSMessage();
+        wsMessage.setType(WSMessageTypeEnum.START_GAME.getValue());
+        wsMessage.setDescription("开始游戏！");
+        // TODO cardMap 没装进去
+        broadcast(initGameRequest.getRoomId(), wsMessage);
 
         return Mono.empty();
     }
