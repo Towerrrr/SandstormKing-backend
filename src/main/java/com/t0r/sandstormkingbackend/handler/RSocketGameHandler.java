@@ -1,5 +1,6 @@
 package com.t0r.sandstormkingbackend.handler;
 
+import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager;
@@ -114,11 +115,14 @@ public class RSocketGameHandler {
         log.info("初始化游戏，房间：{}", initGameRequest.getRoomId());
         Map<Integer, Card> cardMap = challengerGameManager.initGame(initGameRequest);
 
+        GameMessage gameMessage = new GameMessage();
+        gameMessage.setBody(JSONUtil.toJsonStr(cardMap));
+
         // 广播开始游戏
         WSMessage wsMessage = new WSMessage();
         wsMessage.setType(WSMessageTypeEnum.START_GAME.getValue());
         wsMessage.setDescription("开始游戏！");
-        // TODO cardMap 没装进去
+        wsMessage.setGameMessage(gameMessage);
         broadcast(initGameRequest.getRoomId(), wsMessage);
 
         return Mono.empty();
