@@ -164,6 +164,14 @@ public class RSocketGameHandler {
         sink.tryEmitNext(gameMessage);
     }
 
+    @MessageMapping("challenger.receive")
+    public Flux<GameMessage> handleChallengerReceiveStream(@Payload Long userId) {
+        log.info("用户：{}，准备接收挑战消息", userId);
+        Sinks.Many<GameMessage> sink = challengerSinks.computeIfAbsent(userId,
+                id -> Sinks.many().multicast().onBackpressureBuffer());
+        return sink.asFlux();
+    }
+
     @MessageMapping("game.receive")
     public Flux<WSMessage> handleReceiveStream(@Payload Long userId) {
         log.info("用户：{}，准备接收消息", userId);
@@ -173,7 +181,7 @@ public class RSocketGameHandler {
     }
 
     /**
-     *  消息包括：用户准备状态改变、
+     * 消息包括：用户准备状态改变、
      */
     @MessageMapping("message")
     public Mono<Void> handleMessage(ForwardedMessageRequest forwardedMessageRequest) {
