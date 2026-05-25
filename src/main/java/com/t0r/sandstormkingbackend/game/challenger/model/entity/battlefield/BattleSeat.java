@@ -23,9 +23,9 @@ public class BattleSeat {
     private final Long userId;
 
     @Getter
-    private final Map<String, LinkedList<CardInstance>> mainDecks;
+    private final Map<String, Deque<CardInstance>> mainDecks;
     @Getter
-    private final Map<String, LinkedList<CardInstance>> discardDecks;
+    private final Map<String, Deque<CardInstance>> discardDecks;
 
     @Getter
     @Setter

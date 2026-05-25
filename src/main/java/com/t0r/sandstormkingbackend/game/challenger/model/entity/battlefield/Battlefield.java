@@ -64,8 +64,8 @@ public class Battlefield {
     // endregion
 
     public Battlefield(Long roomId, String name, String currentRound, Map<Long, ChallengerPlayer> challengerPlayers,
-                       ApplicationEventPublisher eventPublisher,
-                       Map<String, LinkedList<CardInstance>> mainDecks, Map<String, LinkedList<CardInstance>> discardDecks) {
+            ApplicationEventPublisher eventPublisher,
+            Map<String, Deque<CardInstance>> mainDecks, Map<String, Deque<CardInstance>> discardDecks) {
         this.roomId = roomId;
         this.currentRound = currentRound;
         this.name = name;
@@ -73,7 +73,8 @@ public class Battlefield {
         for (ChallengerPlayer challengerPlayer : challengerPlayers.values()) {
             String playerBattlefield = challengerPlayer.getBattlefieldSchedules().get(currentRound);
             if (playerBattlefield.equals(this.name)) {
-                halfBattlefieldMap.put(challengerPlayer.getUserId(), new BattleSeat(challengerPlayer.getUserId(), mainDecks, discardDecks));
+                halfBattlefieldMap.put(challengerPlayer.getUserId(),
+                        new BattleSeat(challengerPlayer.getUserId(), mainDecks, discardDecks));
                 playerMap.put(challengerPlayer.getUserId(), challengerPlayer);
             }
         }
@@ -82,56 +83,57 @@ public class Battlefield {
 
     public Mono<Void> advanceBattle() {
         return Mono.defer(() -> {
-                    log.info("当前战斗状态: {}", currentState);
+            log.info("当前战斗状态: {}", currentState);
 
-                    switch (currentState) {
-                        case firstAttack:
-                            firstAttack();
-                            break;
-                        case triggerDefenderRestBuffs:
-                            triggerDefenderRestBuffs();
-                            break;
-                        case castAttack:
-                            castAttack();
-                            break;
-                        case triggerAttackerBuffs:
-                            triggerAttackerBuffs();
-                            break;
-                        case checkAttackPower:
-                            checkAttackPower();
-                            break;
-                        case applyAttackDamage:
-                            applyAttackDamage();
-                            break;
-                        case moveAttackerToRestZone:
-                            moveAttackerToRestZone();
-                            break;
-                        case swapAttackAndDefense:
-                            swapAttackAndDefense();
-                            break;
-                        case endBattle:
-                            endBattle();
-                            break;
-                        case checkAndPut:
-                        case selectCard:
-                            break;
-                        default:
-                            throw new RuntimeException("未知的战斗状态: " + currentState);
-                    }
+            switch (currentState) {
+                case firstAttack:
+                    firstAttack();
+                    break;
+                case triggerDefenderRestBuffs:
+                    triggerDefenderRestBuffs();
+                    break;
+                case castAttack:
+                    castAttack();
+                    break;
+                case triggerAttackerBuffs:
+                    triggerAttackerBuffs();
+                    break;
+                case checkAttackPower:
+                    checkAttackPower();
+                    break;
+                case applyAttackDamage:
+                    applyAttackDamage();
+                    break;
+                case moveAttackerToRestZone:
+                    moveAttackerToRestZone();
+                    break;
+                case swapAttackAndDefense:
+                    swapAttackAndDefense();
+                    break;
+                case endBattle:
+                    endBattle();
+                    break;
+                case checkAndPut:
+                case selectCard:
+                    break;
+                default:
+                    throw new RuntimeException("未知的战斗状态: " + currentState);
+            }
 
-                    switch (currentState) {
-                        case endBattle:
-                            return Mono.empty();
-                        case selectCard:
-                            return SelectAndMoveOrResult.apply(attackerCard, attacker, defender, eventPublisher, this, tempAttackerPower)
-                                    .then(Mono.defer(this::advanceBattle));
-                        case checkAndPut:
-                            return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)
-                                    .then(Mono.defer(this::advanceBattle));
-                        default:
-                            return Mono.defer(this::advanceBattle);
-                    }
-                })
+            switch (currentState) {
+                case endBattle:
+                    return Mono.empty();
+                case selectCard:
+                    return SelectAndMoveOrResult
+                            .apply(attackerCard, attacker, defender, eventPublisher, this, tempAttackerPower)
+                            .then(Mono.defer(this::advanceBattle));
+                case checkAndPut:
+                    return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)
+                            .then(Mono.defer(this::advanceBattle));
+                default:
+                    return Mono.defer(this::advanceBattle);
+            }
+        })
                 .doOnError(e -> log.error("战斗状态机异常", e));
     }
 
@@ -139,7 +141,8 @@ public class Battlefield {
         halfBattlefieldMap.get(userId).setReady(true);
 
         for (Long opponentId : halfBattlefieldMap.keySet()) {
-            if (!Objects.equals(opponentId, userId)) return opponentId;
+            if (!Objects.equals(opponentId, userId))
+                return opponentId;
         }
         return null;
     }
@@ -156,8 +159,8 @@ public class Battlefield {
         this.currentPhase = PhaseEnum.BATTLE.getValue();
 
         for (BattleSeat battleSeat : halfBattlefieldMap.values()) {
-            LinkedList<CardInstance> handCardInstances =
-                    challengerPlayers.get(battleSeat.getUserId()).getHandCardInstances();
+            LinkedList<CardInstance> handCardInstances = challengerPlayers.get(battleSeat.getUserId())
+                    .getHandCardInstances();
             battleSeat.initHandZone(handCardInstances);
         }
 
@@ -230,8 +233,8 @@ public class Battlefield {
             // 给防守方上 休息区 BUFF
             Card defenderCard = cardMap.get(battle.getDefender().getCardId());
             int gainCoefficient = SpecialSkills.getGainCoefficient(defenderCard);
-            BuffCallParam buffCallParam =
-                    new BuffCallParam(TimeRangeEnum.CONTROL_FLAG.getValue(), defenderPower, defenderCard, gainCoefficient);
+            BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.CONTROL_FLAG.getValue(), defenderPower,
+                    defenderCard, gainCoefficient);
             defender.triggerRestBuffs(buffCallParam);
         }
 
@@ -298,8 +301,8 @@ public class Battlefield {
     private void triggerAttackerBuffs() {
         Card card = cardMap.get(attackerCard.getCardId());
         int gainCoefficient = SpecialSkills.getGainCoefficient(card);
-        BuffCallParam buffCallParam =
-                new BuffCallParam(TimeRangeEnum.ATTACK.getValue(), tempAttackerPower, card, gainCoefficient);
+        BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.ATTACK.getValue(), tempAttackerPower, card,
+                gainCoefficient);
         attacker.triggerRestBuffs(buffCallParam);
         attacker.triggerNextBuff(buffCallParam);
         // TODO 进攻时
@@ -388,8 +391,8 @@ public class Battlefield {
             }
             // 夺旗成功上相关 buff
             int gainCoefficient = SpecialSkills.getGainCoefficient(lastAttackerCard);
-            BuffCallParam buffCallParam =
-                    new BuffCallParam(TimeRangeEnum.CAPTURE_FLAG.getValue(), defenderPower, lastAttackerCard, gainCoefficient);
+            BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.CAPTURE_FLAG.getValue(), defenderPower,
+                    lastAttackerCard, gainCoefficient);
             attacker.triggerRestBuffs(buffCallParam);
             attackerPower = 0;
 

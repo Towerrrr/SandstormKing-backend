@@ -4,14 +4,15 @@ import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * 负责主牌堆 / 弃牌堆 的管理：初始化、抽牌、弃牌、洗牌等操作。
  */
 public class DeckManager {
 
-    private final Map<String, LinkedList<CardInstance>> mainDecks = new ConcurrentHashMap<>();
-    private final Map<String, LinkedList<CardInstance>> discardDecks = new ConcurrentHashMap<>();
+    private final Map<String, Deque<CardInstance>> mainDecks = new ConcurrentHashMap<>();
+    private final Map<String, Deque<CardInstance>> discardDecks = new ConcurrentHashMap<>();
 
     // cardId -> Card 元数据，来自外部（ChallengerGameManager.cardMap）
     private final Map<Integer, Card> cardMap;
@@ -24,8 +25,8 @@ public class DeckManager {
     private void initLevelMaps() {
         for (LevelEnum level : LevelEnum.values()) {
             if (level.isKept()) {
-                mainDecks.put(level.getValue(), new LinkedList<>());
-                discardDecks.put(level.getValue(), new LinkedList<>());
+                mainDecks.put(level.getValue(), new ConcurrentLinkedDeque<>());
+                discardDecks.put(level.getValue(), new ConcurrentLinkedDeque<>());
             }
         }
     }
@@ -64,11 +65,22 @@ public class DeckManager {
         // 打乱主牌堆
         for (LevelEnum levelEnum : LevelEnum.values()) {
             if (levelEnum.isKept()) {
-                Collections.shuffle(mainDecks.get(levelEnum.getValue()));
+                shuffleDeck(mainDecks.get(levelEnum.getValue()));
             }
         }
 
         return localId - 1;
+    }
+
+    private void shuffleDeck(Deque<CardInstance> deck) {
+        if (deck == null || deck.size() <= 1) {
+            return;
+        }
+
+        List<CardInstance> shuffled = new ArrayList<>(deck);
+        Collections.shuffle(shuffled);
+        deck.clear();
+        deck.addAll(shuffled);
     }
 
     /**
@@ -80,14 +92,17 @@ public class DeckManager {
             return result;
         }
 
-        if (mainDecks.get(level).size() < count) {
-            Collections.shuffle(discardDecks.get(level));
-            mainDecks.get(level).addAll(discardDecks.get(level));
-            discardDecks.get(level).clear();
+        Deque<CardInstance> mainDeck = mainDecks.get(level);
+        Deque<CardInstance> discardDeck = discardDecks.get(level);
+
+        if (mainDeck.size() < count) {
+            shuffleDeck(discardDeck);
+            mainDeck.addAll(discardDeck);
+            discardDeck.clear();
         }
 
-        for (int i = 0; i < count && !mainDecks.get(level).isEmpty(); i++) {
-            result.add(mainDecks.get(level).removeFirst());
+        for (int i = 0; i < count && !mainDeck.isEmpty(); i++) {
+            result.add(mainDeck.removeFirst());
         }
 
         return result;
@@ -128,11 +143,11 @@ public class DeckManager {
         }
     }
 
-    public Map<String, LinkedList<CardInstance>> getMainDecks() {
+    public Map<String, Deque<CardInstance>> getMainDecks() {
         return mainDecks;
     }
 
-    public Map<String, LinkedList<CardInstance>> getDiscardDecks() {
+    public Map<String, Deque<CardInstance>> getDiscardDecks() {
         return discardDecks;
     }
 }

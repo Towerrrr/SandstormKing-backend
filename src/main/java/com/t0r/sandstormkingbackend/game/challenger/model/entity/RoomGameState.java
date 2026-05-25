@@ -324,7 +324,7 @@ public class RoomGameState {
 
     public static void discardCardInstances(LinkedList<CardInstance> handCardInstances,
             Set<Integer> cardInstanceIds,
-            Map<String, LinkedList<CardInstance>> discardDecks) {
+            Map<String, Deque<CardInstance>> discardDecks) {
         Iterator<CardInstance> iterator = handCardInstances.iterator();
         while (iterator.hasNext()) {
             CardInstance cardInstance = iterator.next();

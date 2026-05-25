@@ -24,13 +24,13 @@ public class RoomGameStateVO {
     // 回合数 -> 抽卡计划
     private Map<String, DrawSchedule> drawSchedules = new HashMap<>();
 
-//    变化域
+    // 变化域
 
     private String currentRound;
 
     private Map<String, CupInstanceDeck> cupInstances = new ConcurrentHashMap<>();
 
-    private Map<String, LinkedList<CardInstance>> mainDecks = new ConcurrentHashMap<>();
-    private Map<String, LinkedList<CardInstance>> discardDecks = new ConcurrentHashMap<>();
+    private Map<String, Deque<CardInstance>> mainDecks = new ConcurrentHashMap<>();
+    private Map<String, Deque<CardInstance>> discardDecks = new ConcurrentHashMap<>();
 
 }

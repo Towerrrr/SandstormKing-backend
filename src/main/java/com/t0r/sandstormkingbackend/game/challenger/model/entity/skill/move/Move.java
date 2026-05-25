@@ -4,11 +4,11 @@ import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleSeat;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.cardFilter.CardFilter;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.LevelEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.SpecialCardsEnum;
 
 import java.util.Collections;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.function.Function;
@@ -28,10 +28,6 @@ public class Move implements Function<BattleSeat, Boolean> {
     private final Integer count;
     private final Integer maxCount;
 
-    private final String type;
-
-    private final CardFilter cardFilter;
-
     private final EndEnum end;
 
     public Move(MoveConfigParam moveConfigParam) {
@@ -39,8 +35,6 @@ public class Move implements Function<BattleSeat, Boolean> {
         this.start = StartEnum.getByValue(moveConfigParam.getStart());
         this.count = moveConfigParam.getCount();
         this.maxCount = moveConfigParam.getMaxCount();
-        this.type = moveConfigParam.getType();
-        this.cardFilter = moveConfigParam.getCardFilter();
         this.end = EndEnum.getByValue(moveConfigParam.getEnd());
     }
 
@@ -48,8 +42,8 @@ public class Move implements Function<BattleSeat, Boolean> {
      * “背包客”技能在这里实现
      */
     public static void toRestZone(CardInstance cardInstance,
-                                  Map<String, LinkedList<CardInstance>> restZone,
-                                  LinkedList<CardInstance> consumedDeck) {
+            Map<String, LinkedList<CardInstance>> restZone,
+            LinkedList<CardInstance> consumedDeck) {
         String name = cardMap.get(cardInstance.getId()).getName();
         if (name.equals(SpecialCardsEnum.PACKAGE_KEEPER.getName())) {
             consumedDeck.add(cardInstance);
@@ -68,8 +62,8 @@ public class Move implements Function<BattleSeat, Boolean> {
      * “侏儒”技能在这里实现
      */
     public static void toConsumedDeck(CardInstance cardInstance,
-                                      LinkedList<CardInstance> consumedDeck,
-                                      LinkedList<CardInstance> handZone) {
+            LinkedList<CardInstance> consumedDeck,
+            LinkedList<CardInstance> handZone) {
         String name = cardMap.get(cardInstance.getId()).getName();
         if (name.equals(SpecialCardsEnum.DWARF.getName())) {
             handZone.offerFirst(cardInstance);
@@ -105,7 +99,7 @@ public class Move implements Function<BattleSeat, Boolean> {
 
     private LinkedList<CardInstance> getStartCards(BattleSeat battleSeat) {
         LinkedList<CardInstance> startObj = new LinkedList<>();
-        Map<String, LinkedList<CardInstance>> mainDecks = battleSeat.getMainDecks();
+        Map<String, Deque<CardInstance>> mainDecks = battleSeat.getMainDecks();
         LinkedList<CardInstance> handZone = battleSeat.getHandZone();
 
         if (this.start == null && OptionalStartEnum.HAND_ZONE.getValue().equals(this.optionalStart)) {
@@ -140,7 +134,7 @@ public class Move implements Function<BattleSeat, Boolean> {
         return startObj;
     }
 
-    private void moveCards(LinkedList<CardInstance> from, LinkedList<CardInstance> to, boolean fromFirst, int count) {
+    private void moveCards(Deque<CardInstance> from, LinkedList<CardInstance> to, boolean fromFirst, int count) {
         for (int i = 0; i < count; i++) {
             if (from.isEmpty()) {
                 break;
@@ -153,7 +147,7 @@ public class Move implements Function<BattleSeat, Boolean> {
         LinkedList<CardInstance> handZone = battleSeat.getHandZone();
         Map<String, LinkedList<CardInstance>> restZone = battleSeat.getRestZone();
         LinkedList<CardInstance> consumedDeck = battleSeat.getConsumedDeck();
-        Map<String, LinkedList<CardInstance>> discardDecks = battleSeat.getDiscardDecks();
+        Map<String, Deque<CardInstance>> discardDecks = battleSeat.getDiscardDecks();
 
         switch (this.end) {
             case HAND_ZONE_TOP:
