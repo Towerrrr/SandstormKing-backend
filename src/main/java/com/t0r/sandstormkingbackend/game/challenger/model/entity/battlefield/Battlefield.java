@@ -57,15 +57,15 @@ public class Battlefield {
     Power defenderPower = new Power(0);
     Integer attackerPower;
 
-    Battle battle = null;
+    Battle battle = new Battle();
     CardInstance attackerCard = null;
     Power tempAttackerPower = null;
 
     // endregion
 
     public Battlefield(Long roomId, String name, String currentRound, Map<Long, ChallengerPlayer> challengerPlayers,
-            ApplicationEventPublisher eventPublisher,
-            Map<String, Deque<CardInstance>> mainDecks, Map<String, Deque<CardInstance>> discardDecks) {
+                       ApplicationEventPublisher eventPublisher,
+                       Map<String, Deque<CardInstance>> mainDecks, Map<String, Deque<CardInstance>> discardDecks) {
         this.roomId = roomId;
         this.currentRound = currentRound;
         this.name = name;
@@ -83,12 +83,9 @@ public class Battlefield {
 
     public Mono<Void> advanceBattle() {
         return Mono.defer(() -> {
-            log.info("当前战斗状态: {}", currentState);
+                    log.info("当前战斗状态: {}", currentState);
 
             switch (currentState) {
-                case firstAttack:
-                    firstAttack();
-                    break;
                 case triggerDefenderRestBuffs:
                     triggerDefenderRestBuffs();
                     break;
@@ -169,7 +166,7 @@ public class Battlefield {
         this.attacker = halfBattlefieldMap.get(startPlayerId);
         this.defender = halfBattlefieldMap.get(elsePlayerId);
 
-        this.currentState = BattleStateEnum.firstAttack;
+        this.currentState = BattleStateEnum.castAttack;
         // 启动状态机（非阻塞）
         advanceBattle()
                 .doOnSuccess(nil -> log.info("战斗状态机正常完成"))
@@ -216,17 +213,7 @@ public class Battlefield {
 
     // endregion
 
-    /**
-     * 最开始进攻方先放一张牌
-     */
-    private void firstAttack() {
-        battle = new Battle();
-        attackerCard = attacker.castNextCard();
-        battle.getAttacker().add(attackerCard);
-        attackerPower = cardMap.get(attackerCard.getCardId()).getBasePower();
-
-        this.currentState = BattleStateEnum.triggerDefenderRestBuffs;
-    }
+    // region 战斗逻辑
 
     private void triggerDefenderRestBuffs() {
         if (battle.getDefender() != null) { // 跳过第一次攻击
@@ -242,8 +229,9 @@ public class Battlefield {
     }
 
     private void castAttack() {
-        // 进攻方出牌，直到攻击力 >= 防守力 或手牌用完
-        if (attackerPower < Objects.requireNonNull(defenderPower).getValue() &&
+        // 进攻方出牌，第一次出牌，或者，直到攻击力 >= 防守力 或手牌用完
+        if (defenderPower.getValue() == 0 ||
+                attackerPower < Objects.requireNonNull(defenderPower).getValue() &&
                 attacker.hasCardInHandZone()) {
             // TODO 控制旗帜
             attackerCard = attacker.castNextCard();
@@ -411,5 +399,7 @@ public class Battlefield {
 
         eventPublisher.publishEvent(new EndBattleEvent(this.roomId, this.name, this.winnerId));
     }
+
+    // endregion
 
 }
