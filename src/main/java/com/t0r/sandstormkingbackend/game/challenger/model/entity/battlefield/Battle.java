@@ -14,6 +14,12 @@ public class Battle {
     private LinkedList<CardInstance> attacker = new LinkedList<>();
     Integer attackerPower = 0;
 
+    /**
+     * 等待被移入休息区中
+     */
+    private LinkedList<CardInstance> awaitingRest = new LinkedList<>();
+
+
     public boolean isAttackerWeakerThanDefender() {
         return attackerPower < defenderPower.getValue();
     }
@@ -28,6 +34,17 @@ public class Battle {
 
     public void addAttackerPower(int power) {
         this.attackerPower += power;
+    }
+
+    public CardInstance swapAttackAndDefense(Power tempAttackerPower) {
+        // 进攻方最后一张牌做防守方
+        this.defender = attacker.removeLast();
+        this.defenderPower.setValue(tempAttackerPower.getValue());
+        this.attackerPower = 0;
+        this.awaitingRest = this.attacker;
+        this.attacker = new LinkedList<>();
+
+        return this.defender;
     }
 
 }

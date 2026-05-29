@@ -83,48 +83,45 @@ public class Battlefield {
         return Mono.defer(() -> {
                     log.info("当前战斗状态: {}", currentState);
 
-            switch (currentState) {
-                case triggerDefenderRestBuffs:
-                    triggerDefenderRestBuffs();
-                    break;
-                case playCards:
-                    PlayCards playCards =
-                            new PlayCards(currentRound, battle, attacker, defender, attackerCard, tempAttackerPower, playerMap, winnerId);
-                    this.currentState = playCards.castAttack();
-                    break;
-                case checkAttackPower:
-                    checkAttackPower();
-                    break;
-                case moveAttackerToRestZone:
-                    moveAttackerToRestZone();
-                    break;
-                case swapAttackAndDefense:
-                    swapAttackAndDefense();
-                    break;
-                case endBattle:
-                    endBattle();
-                    break;
-                case checkAndPut:
-                case selectCard:
-                    break;
-                default:
-                    throw new RuntimeException("未知的战斗状态: " + currentState);
-            }
+                    switch (currentState) {
+                        case playCards:
+                            PlayCards playCards =
+                                    new PlayCards(currentRound, battle, attacker, defender, attackerCard, tempAttackerPower, playerMap, winnerId);
+                            this.currentState = playCards.castAttack();
+                            break;
+                        case checkAttackPower:
+                            checkAttackPower();
+                            break;
+                        case moveAttackerToRestZone:
+                            moveAttackerToRestZone();
+                            break;
+                        case swapAttackAndDefense:
+                            swapAttackAndDefense();
+                            break;
+                        case endBattle:
+                            endBattle();
+                            break;
+                        case checkAndPut:
+                        case selectCard:
+                            break;
+                        default:
+                            throw new RuntimeException("未知的战斗状态: " + currentState);
+                    }
 
-            switch (currentState) {
-                case endBattle:
-                    return Mono.empty();
-                case selectCard:
-                    return SelectAndMoveOrResult
-                            .apply(attackerCard, attacker, defender, eventPublisher, this, tempAttackerPower)
-                            .then(Mono.defer(this::advanceBattle));
-                case checkAndPut:
-                    return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)
-                            .then(Mono.defer(this::advanceBattle));
-                default:
-                    return Mono.defer(this::advanceBattle);
-            }
-        })
+                    switch (currentState) {
+                        case endBattle:
+                            return Mono.empty();
+                        case selectCard:
+                            return SelectAndMoveOrResult
+                                    .apply(attackerCard, attacker, defender, eventPublisher, this, tempAttackerPower)
+                                    .then(Mono.defer(this::advanceBattle));
+                        case checkAndPut:
+                            return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)
+                                    .then(Mono.defer(this::advanceBattle));
+                        default:
+                            return Mono.defer(this::advanceBattle);
+                    }
+                })
                 .doOnError(e -> log.error("战斗状态机异常", e));
     }
 
@@ -209,19 +206,6 @@ public class Battlefield {
 
     // region 战斗逻辑
 
-    private void triggerDefenderRestBuffs() {
-        if (battle.getDefender() != null) { // 跳过第一次攻击
-            // 给防守方上 休息区 BUFF
-            Card defenderCard = cardMap.get(battle.getDefender().getCardId());
-            int gainCoefficient = SpecialSkills.getGainCoefficient(defenderCard);
-            BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.CONTROL_FLAG.getValue(), battle.getDefenderPower(),
-                    defenderCard, gainCoefficient);
-            defender.triggerRestBuffs(buffCallParam);
-        }
-
-        this.currentState = BattleStateEnum.playCards;
-    }
-
     /**
      * 进攻方手牌耗尽攻击力依旧不足
      */
@@ -248,26 +232,23 @@ public class Battlefield {
     }
 
     /**
-     * 将上一轮的上一轮所有进攻牌放入休息区
+     * 将防守牌和防守牌底下的牌放入休息区
      */
     private void moveAttackerToRestZone() {
-        if (battleList.size() >= 2) {
-            Iterator<Battle> descendingIterator = battleList.descendingIterator();
-            descendingIterator.next();
-            LinkedList<CardInstance> downedCard = descendingIterator.next().getAttacker();
+        LinkedList<CardInstance> downedCard = battle.getAwaitingRest();
+        downedCard.add(battle.getDefender());
 
-            for (CardInstance cardInstance : downedCard) {
-                if (defender.addToRestZone(cardInstance)) {
-                    this.winnerId.setValue(attacker.getUserId());
-                    playerMap.get(attacker.getUserId()).getBattlefieldResults().put(currentRound, true);
-                    playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, false);
-                    log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
+        for (CardInstance cardInstance : downedCard) {
+            if (defender.addToRestZone(cardInstance)) {
+                this.winnerId.setValue(attacker.getUserId());
+                playerMap.get(attacker.getUserId()).getBattlefieldResults().put(currentRound, true);
+                playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, false);
+                log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
 
-                    this.currentState = BattleStateEnum.endBattle;
+                this.currentState = BattleStateEnum.endBattle;
 
-                    battleList.add(battle);
-                    return;
-                }
+                battleList.add(battle);
+                return;
             }
         }
 
@@ -275,19 +256,17 @@ public class Battlefield {
     }
 
     private void swapAttackAndDefense() {
-        if (!battle.getAttacker().isEmpty()) {
-            // 下一轮由这轮进攻方最后一张牌做防守方
-            CardInstance lastAttacker = battle.getAttacker().getLast();
-            Card lastAttackerCard = cardMap.get(lastAttacker.getCardId());
-            battle = new Battle();
-            battle.setDefender(lastAttacker);
-            battle.getDefenderPower().setValue(tempAttackerPower.getValue());
+        // TODO 什么时候攻击牌会是空的呢？
+        if (!battle.getAttacker().isEmpty()) { // 攻击牌非空
+            Card lastAttackerCard = cardMap.get(battle.swapAttackAndDefense(tempAttackerPower).getCardId());
+
             if (lastAttackerCard.getTimeRange().equals(TimeRangeEnum.CAPTURE_FLAG.getValue())) { // TimeRange：夺旗成功
                 ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
                 ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
                 ConditionAndResult.apply(lastAttackerCard, currentRound, attacker, defender,
                         attackerInfo, defenderInfo, battle.getDefenderPower());
             }
+            // TODO 下面这个是应该放到上面的 if 里面的吗
             // 夺旗成功上相关 buff
             int gainCoefficient = SpecialSkills.getGainCoefficient(lastAttackerCard);
             BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.CAPTURE_FLAG.getValue(), battle.getDefenderPower(),
@@ -299,7 +278,17 @@ public class Battlefield {
             attacker = temp;
         }
 
-        this.currentState = BattleStateEnum.triggerDefenderRestBuffs;
+        // 给防守方上 休息区 BUFF
+        // TODO 如果上面的 if 是非必要的，下面这个卡的变量可以直接复用上面的
+        if (battle.getDefender() != null) { // 跳过第一次攻击
+            Card defenderCard = cardMap.get(battle.getDefender().getCardId());
+            int gainCoefficient = SpecialSkills.getGainCoefficient(defenderCard);
+            BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.CONTROL_FLAG.getValue(), battle.getDefenderPower(),
+                    defenderCard, gainCoefficient);
+            defender.triggerRestBuffs(buffCallParam);
+        }
+
+        this.currentState = BattleStateEnum.playCards;
     }
 
     private void endBattle() {
