@@ -10,7 +10,7 @@ public class Power {
     int tempValue;
 
     /**
-     * 用这个值攻受互换
+     * 用这个值攻守互换
      */
     int value;
 

@@ -73,12 +73,13 @@ public class CheckAndPut {
                         putCard(response, battleSeat);
                     })
                     .then()
+                    // TODO 待处理
                     .doOnSuccess(v -> {
-                        if (card.getTimeRange().equals(TimeRangeEnum.LOSE_FLAG.getValue())) {
-                            battlefield.setCurrentState(BattleStateEnum.moveAttackerToRestZone);
-                        } else {
-                            battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs);
-                        }
+//                        if (card.getTimeRange().equals(TimeRangeEnum.LOSE_FLAG.getValue())) {
+//                            battlefield.setCurrentState(BattleStateEnum.moveAttackerToRestZone);
+//                        } else {
+//                            battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs);
+//                        }
                     });
         } else {
             return Mono.empty();

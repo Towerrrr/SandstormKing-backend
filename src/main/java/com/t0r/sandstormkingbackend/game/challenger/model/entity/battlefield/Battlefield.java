@@ -41,7 +41,8 @@ public class Battlefield {
 
     LinkedList<Battle> battleList = new LinkedList<>();
 
-    Long winnerId;
+    // TODO 先设置成 0 吗
+    WinnerId winnerId = new WinnerId(0);
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -53,9 +54,6 @@ public class Battlefield {
 
     private BattleSeat attacker;
     private BattleSeat defender;
-
-    Power defenderPower = new Power(0);
-    Integer attackerPower;
 
     Battle battle = new Battle();
     CardInstance attackerCard = null;
@@ -89,17 +87,13 @@ public class Battlefield {
                 case triggerDefenderRestBuffs:
                     triggerDefenderRestBuffs();
                     break;
-                case castAttack:
-                    castAttack();
-                    break;
-                case triggerAttackerBuffs:
-                    triggerAttackerBuffs();
+                case playCards:
+                    PlayCards playCards =
+                            new PlayCards(currentRound, battle, attacker, defender, attackerCard, tempAttackerPower, playerMap, winnerId);
+                    this.currentState = playCards.castAttack();
                     break;
                 case checkAttackPower:
                     checkAttackPower();
-                    break;
-                case applyAttackDamage:
-                    applyAttackDamage();
                     break;
                 case moveAttackerToRestZone:
                     moveAttackerToRestZone();
@@ -166,7 +160,7 @@ public class Battlefield {
         this.attacker = halfBattlefieldMap.get(startPlayerId);
         this.defender = halfBattlefieldMap.get(elsePlayerId);
 
-        this.currentState = BattleStateEnum.castAttack;
+        this.currentState = BattleStateEnum.playCards;
         // 启动状态机（非阻塞）
         advanceBattle()
                 .doOnSuccess(nil -> log.info("战斗状态机正常完成"))
@@ -220,103 +214,20 @@ public class Battlefield {
             // 给防守方上 休息区 BUFF
             Card defenderCard = cardMap.get(battle.getDefender().getCardId());
             int gainCoefficient = SpecialSkills.getGainCoefficient(defenderCard);
-            BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.CONTROL_FLAG.getValue(), defenderPower,
+            BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.CONTROL_FLAG.getValue(), battle.getDefenderPower(),
                     defenderCard, gainCoefficient);
             defender.triggerRestBuffs(buffCallParam);
         }
 
-        this.currentState = BattleStateEnum.castAttack;
-    }
-
-    private void castAttack() {
-        // 进攻方出牌，第一次出牌，或者，直到攻击力 >= 防守力 或手牌用完
-        if (defenderPower.getValue() == 0 ||
-                attackerPower < Objects.requireNonNull(defenderPower).getValue() &&
-                attacker.hasCardInHandZone()) {
-            // TODO 控制旗帜
-            attackerCard = attacker.castNextCard();
-            Card card = cardMap.get(attackerCard.getCardId());
-
-            if (SpecialSkills.checkInstantWin(card, attacker)) {
-                this.winnerId = defender.getUserId();
-                playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, true);
-                playerMap.get(attacker.getUserId()).getBattlefieldResults().put(currentRound, false);
-                log.info("战斗结束，进攻方打出飞艇并触发技能，胜利者为 {}", winnerId);
-                this.currentState = BattleStateEnum.endBattle;
-                return;
-            }
-
-            tempAttackerPower = new Power(SpecialSkills.calculateRealTimePower(card, currentRound));
-            // TODO 鹿娃
-
-            this.currentState = BattleStateEnum.triggerAttackerBuffs;
-
-            if (card.getTimeRange().equals(TimeRangeEnum.IMMEDIATELY.getValue())) { // TimeRange：立即触发
-                if (SkillTypeEnum.CONDITION_AND_RESULT.getValue().equals(card.getSkillType())) {
-                    ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
-                    ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
-                    ConditionAndResult.apply(card, currentRound, attacker, defender,
-                            attackerInfo, defenderInfo, tempAttackerPower);
-                }
-                if (SkillTypeEnum.CHECK_AND_MOVE_RESULT.getValue().equals(card.getSkillType())) {
-                    this.currentState = BattleStateEnum.checkAndPut;
-                }
-                if (SkillTypeEnum.SELECTOR_AND_MOVE.getValue().equals(card.getSkillType())) {
-                    this.currentState = BattleStateEnum.selectCard;
-                }
-                if (SkillTypeEnum.IMMEDIATELY_MOVE.getValue().equals(card.getSkillType())) {
-                    MoveConfigParam moveConfigParam = card.getMoveConfigParam();
-                    if (moveConfigParam != null) {
-                        Move move = new Move(moveConfigParam);
-                        if (MoveTargetEnum.OPPONENT.equals(card.getMoveTargetEnum())) {
-                            move.apply(defender);
-                        } else { // 默认移动自己的
-                            move.apply(attacker);
-                        }
-                    }
-                }
-            }
-            if (card.getTimeRange().equals(TimeRangeEnum.OPTIONAL.getValue())) { // TimeRange：可选的
-                // 当前可选的技能全都是选择卡牌
-                this.currentState = BattleStateEnum.selectCard;
-            }
-        } else {
-            battleList.add(battle); // 记录战斗过程
-            this.currentState = BattleStateEnum.checkAttackPower;
-        }
-    }
-
-    private void triggerAttackerBuffs() {
-        Card card = cardMap.get(attackerCard.getCardId());
-        int gainCoefficient = SpecialSkills.getGainCoefficient(card);
-        BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.ATTACK.getValue(), tempAttackerPower, card,
-                gainCoefficient);
-        attacker.triggerRestBuffs(buffCallParam);
-        attacker.triggerNextBuff(buffCallParam);
-        // TODO 进攻时
-
-        // TODO 实施“下一张卡” BUFF 技能，要结合卡的 timeRange
-
-        this.currentState = BattleStateEnum.applyAttackDamage;
-    }
-
-    private void applyAttackDamage() {
-        attackerPower += tempAttackerPower.getTempValue();
-        battle.getAttacker().add(attackerCard);
-
-        if (attackerPower < Objects.requireNonNull(defenderPower).getValue()) {
-            // TODO 夺旗失败
-        }
-
-        this.currentState = BattleStateEnum.castAttack;
+        this.currentState = BattleStateEnum.playCards;
     }
 
     /**
      * 进攻方手牌耗尽攻击力依旧不足
      */
     private void checkAttackPower() {
-        if (attackerPower < defenderPower.getValue()) {
-            this.winnerId = defender.getUserId();
+        if (battle.isAttackerWeakerThanDefender()) {
+            this.winnerId.setValue(defender.getUserId());
             playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, true);
             playerMap.get(attacker.getUserId()).getBattlefieldResults().put(currentRound, false);
             log.info("战斗结束，进攻方无多余手牌，胜利者为 {}", winnerId);
@@ -347,7 +258,7 @@ public class Battlefield {
 
             for (CardInstance cardInstance : downedCard) {
                 if (defender.addToRestZone(cardInstance)) {
-                    this.winnerId = attacker.getUserId();
+                    this.winnerId.setValue(attacker.getUserId());
                     playerMap.get(attacker.getUserId()).getBattlefieldResults().put(currentRound, true);
                     playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, false);
                     log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
@@ -370,19 +281,18 @@ public class Battlefield {
             Card lastAttackerCard = cardMap.get(lastAttacker.getCardId());
             battle = new Battle();
             battle.setDefender(lastAttacker);
-            defenderPower.setValue(tempAttackerPower.getValue());
+            battle.getDefenderPower().setValue(tempAttackerPower.getValue());
             if (lastAttackerCard.getTimeRange().equals(TimeRangeEnum.CAPTURE_FLAG.getValue())) { // TimeRange：夺旗成功
                 ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
                 ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
                 ConditionAndResult.apply(lastAttackerCard, currentRound, attacker, defender,
-                        attackerInfo, defenderInfo, defenderPower);
+                        attackerInfo, defenderInfo, battle.getDefenderPower());
             }
             // 夺旗成功上相关 buff
             int gainCoefficient = SpecialSkills.getGainCoefficient(lastAttackerCard);
-            BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.CAPTURE_FLAG.getValue(), defenderPower,
+            BuffCallParam buffCallParam = new BuffCallParam(TimeRangeEnum.CAPTURE_FLAG.getValue(), battle.getDefenderPower(),
                     lastAttackerCard, gainCoefficient);
             attacker.triggerRestBuffs(buffCallParam);
-            attackerPower = 0;
 
             BattleSeat temp = defender;
             defender = attacker;
@@ -397,7 +307,7 @@ public class Battlefield {
             halfBattlefieldMap.get(player.getUserId()).recallAllCards(player.getHandCardInstances());
         }
 
-        eventPublisher.publishEvent(new EndBattleEvent(this.roomId, this.name, this.winnerId));
+        eventPublisher.publishEvent(new EndBattleEvent(this.roomId, this.name, this.winnerId.getValue()));
     }
 
     // endregion

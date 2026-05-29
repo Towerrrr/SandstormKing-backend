@@ -56,7 +56,9 @@ public class SelectAndMoveOrResult {
                     moveOrResult(card, cardSelectorResponse, moveTarget, tempAttackerPower);
                 })
                 .then()
-                .doOnSuccess(v -> battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs));
+//                .doOnSuccess(v -> battlefield.setCurrentState(BattleStateEnum.triggerAttackerBuffs));
+                // TODO 待处理
+                .doOnSuccess(v -> log.info(""));
     }
 
     private void moveOrResult(Card card, CardSelectorResponse cardSelectorResponse, BattleSeat seat, Power tempAttackerPower) {

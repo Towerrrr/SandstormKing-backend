@@ -33,10 +33,10 @@ public class Card {
 
     // region 技能属性
 
-    private String timeRange = null;
+    private String timeRange = "";
 
     // TODO 所有技能判断的地方进行修改
-    private String skillType = null;
+    private String skillType = "";
 
     private CheckAndPutParam checkAndPutParam = null;
 
@@ -46,7 +46,7 @@ public class Card {
 
     private MoveConfigParam moveConfigParam = null;
 
-    private String buffType = null;
+    private String buffType = "";
 
     private BuffConfigParam buffConfigParam = null;
 
