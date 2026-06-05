@@ -19,6 +19,11 @@ public class Power {
         this.tempValue = value;
     }
 
+    public void setValueAndTempValue(int value) {
+        this.value = value;
+        this.tempValue = value;
+    }
+
     public void addBase(int value) {
         this.value += value;
         this.tempValue += value;

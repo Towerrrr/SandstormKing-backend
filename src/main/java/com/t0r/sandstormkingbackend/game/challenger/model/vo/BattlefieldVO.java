@@ -30,7 +30,6 @@ public class BattlefieldVO {
         this.halfBattlefieldMap = battlefield.getHalfBattlefieldMap();
         this.startPlayerId = String.valueOf(battlefield.getStartPlayerId());
         this.elsePlayerId = String.valueOf(battlefield.getElsePlayerId());
-        this.battleList = battlefield.getBattleList();
         this.winnerId = String.valueOf(battlefield.getWinnerId());
     }
 }

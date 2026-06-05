@@ -12,6 +12,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.SkillTypeEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.TimeRangeEnum;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -22,19 +23,19 @@ import static com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGam
  * 出牌
  */
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class PlayCards {
 
-    private String currentRound;
+    private final String currentRound;
 
-    private Battle battle;
-    private BattleSeat attacker;
-    private BattleSeat defender;
+    private final Battle battle;
+    private final BattleSeat attacker;
+    private final BattleSeat defender;
     private CardInstance attackerCard;
-    private Power tempAttackerPower;
+    private final Power tempAttackerPower;
 
-    private Map<Long, ChallengerPlayer> playerMap;
-    private WinnerId winnerId;
+    private final Map<Long, ChallengerPlayer> playerMap;
+    private final WinnerId winnerId;
 
     public BattleStateEnum castAttack() {
         // 进攻方出牌，第一次出牌，或者，攻击力 < 防守力 且 手牌未空
@@ -52,7 +53,7 @@ public class PlayCards {
                 return BattleStateEnum.endBattle;
             }
 
-            tempAttackerPower = new Power(SpecialSkills.calculateRealTimePower(card, currentRound));
+            tempAttackerPower.setValueAndTempValue(SpecialSkills.calculateRealTimePower(card, currentRound));
             // TODO 鹿娃
 
             if (card.getTimeRange().equals(TimeRangeEnum.IMMEDIATELY.getValue())) { // TimeRange：立即触发

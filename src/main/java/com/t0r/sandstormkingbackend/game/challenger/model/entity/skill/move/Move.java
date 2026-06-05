@@ -44,7 +44,7 @@ public class Move implements Function<BattleSeat, Boolean> {
     public static void toRestZone(CardInstance cardInstance,
             Map<String, LinkedList<CardInstance>> restZone,
             LinkedList<CardInstance> consumedDeck) {
-        String name = cardMap.get(cardInstance.getId()).getName();
+        String name = cardMap.get(cardInstance.getCardId()).getName();
         if (name.equals(SpecialCardsEnum.PACKAGE_KEEPER.getName())) {
             consumedDeck.add(cardInstance);
             return;
@@ -64,7 +64,7 @@ public class Move implements Function<BattleSeat, Boolean> {
     public static void toConsumedDeck(CardInstance cardInstance,
             LinkedList<CardInstance> consumedDeck,
             LinkedList<CardInstance> handZone) {
-        String name = cardMap.get(cardInstance.getId()).getName();
+        String name = cardMap.get(cardInstance.getCardId()).getName();
         if (name.equals(SpecialCardsEnum.DWARF.getName())) {
             handZone.offerFirst(cardInstance);
             return;

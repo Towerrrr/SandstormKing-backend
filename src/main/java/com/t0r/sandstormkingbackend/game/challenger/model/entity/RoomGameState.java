@@ -301,8 +301,7 @@ public class RoomGameState {
             battlefield1.startBattle(challengerPlayers);
             Long startPlayerId = battlefield1.getStartPlayerId();
             String startWay = battlefield1.getStartWay();
-            LinkedList<Battle> battleList = battlefield1.getBattleList();
-            StartBattleResponse startBattleResponse = new StartBattleResponse(startPlayerId, startWay, battleList);
+            StartBattleResponse startBattleResponse = new StartBattleResponse(startPlayerId, startWay);
 
             eventPublisher.publishEvent(
                     new StartBattleEvent(userId, opponentId, startBattleResponse));

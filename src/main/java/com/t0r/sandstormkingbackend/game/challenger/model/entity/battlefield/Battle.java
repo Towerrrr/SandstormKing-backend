@@ -25,7 +25,8 @@ public class Battle {
     }
 
     public boolean isFirstAttack() {
-        return defenderPower.getValue() == 0;
+        // TODO 改成第一次攻击的标记会不会更优雅？？
+        return (defenderPower.getValue() == 0) && (attackerPower == 0);
     }
 
     public void addAttackerCard(CardInstance cardInstance) {
@@ -34,6 +35,10 @@ public class Battle {
 
     public void addAttackerPower(int power) {
         this.attackerPower += power;
+    }
+
+    public boolean isWaitingToRest() {
+        return defender != null;
     }
 
     public CardInstance swapAttackAndDefense(Power tempAttackerPower) {

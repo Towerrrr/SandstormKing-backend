@@ -7,9 +7,6 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.Condition
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.buff.BuffCallParam;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.selectAndMoveOrResult.SelectAndMoveOrResult;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.checkAndPut.CheckAndPut;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.Move;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveConfigParam;
-import com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.move.MoveTargetEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.*;
 import com.t0r.sandstormkingbackend.game.challenger.model.event.EndBattleEvent;
 import lombok.Data;
@@ -39,7 +36,7 @@ public class Battlefield {
     Long elsePlayerId;
     String startWay;
 
-    LinkedList<Battle> battleList = new LinkedList<>();
+    BattleLog battleLog = new BattleLog();
 
     // TODO 先设置成 0 吗
     WinnerId winnerId = new WinnerId(0);
@@ -56,8 +53,7 @@ public class Battlefield {
     private BattleSeat defender;
 
     Battle battle = new Battle();
-    CardInstance attackerCard = null;
-    Power tempAttackerPower = null;
+    Power tempAttackerPower = new Power(0);
 
     // endregion
 
@@ -86,7 +82,7 @@ public class Battlefield {
                     switch (currentState) {
                         case playCards:
                             PlayCards playCards =
-                                    new PlayCards(currentRound, battle, attacker, defender, attackerCard, tempAttackerPower, playerMap, winnerId);
+                                    new PlayCards(currentRound, battle, attacker, defender, tempAttackerPower, playerMap, winnerId);
                             this.currentState = playCards.castAttack();
                             break;
                         case checkAttackPower:
@@ -111,13 +107,14 @@ public class Battlefield {
                     switch (currentState) {
                         case endBattle:
                             return Mono.empty();
-                        case selectCard:
-                            return SelectAndMoveOrResult
-                                    .apply(attackerCard, attacker, defender, eventPublisher, this, tempAttackerPower)
-                                    .then(Mono.defer(this::advanceBattle));
-                        case checkAndPut:
-                            return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)
-                                    .then(Mono.defer(this::advanceBattle));
+//                        case selectCard:
+//                            return SelectAndMoveOrResult
+//                                    // TODO attackerCard 这里已经废弃
+//                                    .apply(attackerCard, attacker, defender, eventPublisher, this, tempAttackerPower)
+//                                    .then(Mono.defer(this::advanceBattle));
+//                        case checkAndPut:
+//                            return CheckAndPut.apply(attackerCard, attacker, eventPublisher, this)
+//                                    .then(Mono.defer(this::advanceBattle));
                         default:
                             return Mono.defer(this::advanceBattle);
                     }
@@ -217,10 +214,10 @@ public class Battlefield {
             log.info("战斗结束，进攻方无多余手牌，胜利者为 {}", winnerId);
 
             this.currentState = BattleStateEnum.endBattle;
-        } else {
+        } else if (battle.getDefender() != null) { // 第一张牌攻击时没有防守卡
             // TimeRange：失去旗帜
-            Card card = cardMap.get(attackerCard.getId());
-            if (card.getTimeRange().equals(TimeRangeEnum.LOSE_FLAG.getValue())) {
+            Card card = cardMap.get(battle.getDefender().getCardId());
+            if (TimeRangeEnum.LOSE_FLAG.getValue().equals(card.getTimeRange())) {
                 if (card.getCheckAndPutParam() != null) {
                     this.currentState = BattleStateEnum.checkAndPut;
                     // TODO checkAndPut 跳到 moveAttackerToRestZone 这样似乎不优雅？？？
@@ -228,6 +225,9 @@ public class Battlefield {
                     this.currentState = BattleStateEnum.moveAttackerToRestZone;
                 }
             }
+            this.currentState = BattleStateEnum.moveAttackerToRestZone;
+        } else {
+            this.currentState = BattleStateEnum.moveAttackerToRestZone;
         }
     }
 
@@ -235,20 +235,20 @@ public class Battlefield {
      * 将防守牌和防守牌底下的牌放入休息区
      */
     private void moveAttackerToRestZone() {
-        LinkedList<CardInstance> downedCard = battle.getAwaitingRest();
-        downedCard.add(battle.getDefender());
+        if (battle.isWaitingToRest()) {
+            LinkedList<CardInstance> downedCard = battle.getAwaitingRest();
+            downedCard.add(battle.getDefender());
 
-        for (CardInstance cardInstance : downedCard) {
-            if (defender.addToRestZone(cardInstance)) {
-                this.winnerId.setValue(attacker.getUserId());
-                playerMap.get(attacker.getUserId()).getBattlefieldResults().put(currentRound, true);
-                playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, false);
-                log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
+            for (CardInstance cardInstance : downedCard) {
+                if (defender.addToRestZone(cardInstance)) {
+                    this.winnerId.setValue(attacker.getUserId());
+                    playerMap.get(attacker.getUserId()).getBattlefieldResults().put(currentRound, true);
+                    playerMap.get(defender.getUserId()).getBattlefieldResults().put(currentRound, false);
+                    log.info("战斗结束，防守方休息区溢出，胜利者为 {}", winnerId);
 
-                this.currentState = BattleStateEnum.endBattle;
-
-                battleList.add(battle);
-                return;
+                    this.currentState = BattleStateEnum.endBattle;
+                    return;
+                }
             }
         }
 
@@ -260,7 +260,7 @@ public class Battlefield {
         if (!battle.getAttacker().isEmpty()) { // 攻击牌非空
             Card lastAttackerCard = cardMap.get(battle.swapAttackAndDefense(tempAttackerPower).getCardId());
 
-            if (lastAttackerCard.getTimeRange().equals(TimeRangeEnum.CAPTURE_FLAG.getValue())) { // TimeRange：夺旗成功
+            if (TimeRangeEnum.CAPTURE_FLAG.getValue().equals(lastAttackerCard.getTimeRange())) { // TimeRange：夺旗成功
                 ChallengerPlayer attackerInfo = playerMap.get(attacker.getUserId());
                 ChallengerPlayer defenderInfo = playerMap.get(defender.getUserId());
                 ConditionAndResult.apply(lastAttackerCard, currentRound, attacker, defender,

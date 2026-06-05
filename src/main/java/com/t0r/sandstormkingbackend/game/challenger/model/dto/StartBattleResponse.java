@@ -12,12 +12,9 @@ public class StartBattleResponse {
 
     String startWay;
 
-    LinkedList<Battle> battleList;
-
-    public StartBattleResponse(Long startPlayerId, String startWay, LinkedList<Battle> battleList) {
+    public StartBattleResponse(Long startPlayerId, String startWay) {
         this.startPlayerId = startPlayerId.toString();
         this.startWay = startWay;
-        this.battleList = battleList;
     }
 
 }
