@@ -36,6 +36,7 @@ public class PlayCards {
 
     private final Map<Long, ChallengerPlayer> playerMap;
     private final WinnerId winnerId;
+    private final BattleLog battleLog;
 
     public BattleStateEnum castAttack() {
         // 进攻方出牌，第一次出牌，或者，攻击力 < 防守力 且 手牌未空
@@ -108,6 +109,8 @@ public class PlayCards {
     private void applyAttackDamage() {
         battle.addAttackerPower(tempAttackerPower.getTempValue());
         battle.addAttackerCard(attackerCard);
+
+        battleLog.updateAttackerBattleZone(attacker.getUserId(), battle.getAttacker(), battle.getAttackerPower());
 
         if (battle.isAttackerWeakerThanDefender()) {
             // TODO 夺旗失败

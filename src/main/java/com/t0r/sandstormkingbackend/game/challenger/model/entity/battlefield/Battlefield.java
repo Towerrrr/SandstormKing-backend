@@ -82,7 +82,7 @@ public class Battlefield {
                     switch (currentState) {
                         case playCards:
                             PlayCards playCards =
-                                    new PlayCards(currentRound, battle, attacker, defender, tempAttackerPower, playerMap, winnerId);
+                                    new PlayCards(currentRound, battle, attacker, defender, tempAttackerPower, playerMap, winnerId, battleLog);
                             this.currentState = playCards.castAttack();
                             break;
                         case checkAttackPower:
@@ -250,8 +250,8 @@ public class Battlefield {
                     return;
                 }
             }
+            battleLog.updateDefenderRestZone(defender.getUserId(), defender.getRestZone());
         }
-
         this.currentState = BattleStateEnum.swapAttackAndDefense;
     }
 
@@ -288,6 +288,7 @@ public class Battlefield {
             defender.triggerRestBuffs(buffCallParam);
         }
 
+        battleLog.updateDefenderPower(defender.getUserId(), battle.getDefenderPower().getValue());
         this.currentState = BattleStateEnum.playCards;
     }
 

@@ -7,6 +7,7 @@ import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.StartBattleResponse;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battle;
+import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleLog;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.BattleStateEnum;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.battlefield.Battlefield;
 import com.t0r.sandstormkingbackend.game.challenger.model.enums.BattlefieldEnum;
@@ -301,7 +302,8 @@ public class RoomGameState {
             battlefield1.startBattle(challengerPlayers);
             Long startPlayerId = battlefield1.getStartPlayerId();
             String startWay = battlefield1.getStartWay();
-            StartBattleResponse startBattleResponse = new StartBattleResponse(startPlayerId, startWay);
+            BattleLog battleLog = battlefield1.getBattleLog();
+            StartBattleResponse startBattleResponse = new StartBattleResponse(startPlayerId, startWay, battleLog);
 
             eventPublisher.publishEvent(
                     new StartBattleEvent(userId, opponentId, startBattleResponse));
