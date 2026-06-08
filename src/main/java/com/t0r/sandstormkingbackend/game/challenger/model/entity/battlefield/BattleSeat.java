@@ -59,27 +59,6 @@ public class BattleSeat {
         originalHand.clear();
     }
 
-    public void recallAllCards(LinkedList<CardInstance> originalHand) {
-        if (originalHand == null) {
-            return;
-        }
-
-        originalHand.addAll(this.handZone);
-        this.handZone.clear();
-        originalHand.addAll(this.consumedDeck);
-        this.consumedDeck.clear();
-
-        for (LinkedList<CardInstance> cardList : this.restZone.values()) {
-            if (cardList != null && !cardList.isEmpty()) {
-                originalHand.addAll(cardList);
-            }
-        }
-        this.restZone.clear();
-        this.restBuffs.clear();
-
-        originalHand.sort(Comparator.comparing(CardInstance::getId));
-    }
-
     public CardInstance castNextCard() {
         return this.handZone.removeFirst();
     }

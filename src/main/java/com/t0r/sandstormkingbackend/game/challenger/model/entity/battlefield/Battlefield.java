@@ -146,7 +146,7 @@ public class Battlefield {
         for (BattleSeat battleSeat : halfBattlefieldMap.values()) {
             LinkedList<CardInstance> handCardInstances = challengerPlayers.get(battleSeat.getUserId())
                     .getHandCardInstances();
-            battleSeat.initHandZone(handCardInstances);
+            battleSeat.initHandZone(new LinkedList<>(handCardInstances));
         }
 
         decideStartPlayer(challengerPlayers);
@@ -293,10 +293,6 @@ public class Battlefield {
     }
 
     private void endBattle() {
-        for (ChallengerPlayer player : playerMap.values()) {
-            halfBattlefieldMap.get(player.getUserId()).recallAllCards(player.getHandCardInstances());
-        }
-
         eventPublisher.publishEvent(new EndBattleEvent(this.roomId, this.name, this.winnerId.getValue()));
         this.currentState = BattleStateEnum.outBattle;
     }
