@@ -38,7 +38,7 @@ public class BattleSeat {
     // 卡牌名称 -> 卡牌实例列表
     public final static int MAX_REST_ZONE_SIZE = 6;
     @Getter
-    private final Map<String, LinkedList<CardInstance>> restZone = new HashMap<>();
+    private final Map<String, LinkedList<CardInstance>> restZone = new LinkedHashMap<>();
 
     // 消耗牌堆
     @Getter

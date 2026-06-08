@@ -4,6 +4,7 @@ import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
 import lombok.Data;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -20,7 +21,7 @@ public class BattleLog {
         halfBattleLog.setChangeRestZone(true);
         halfBattleLog.setChangeBattleZone(true);
         halfBattleLog.setChangePower(true);
-        halfBattleLog.setRestZone(new HashMap<>(restZone));
+        halfBattleLog.setRestZone(new LinkedHashMap<>(restZone));
         halfBattleLog.setBattleZone(new LinkedList<>());
         halfBattleLog.setPower(0);
 
