@@ -105,7 +105,7 @@ public class Battlefield {
                     }
 
                     switch (currentState) {
-                        case endBattle:
+                        case outBattle:
                             return Mono.empty();
 //                        case selectCard:
 //                            return SelectAndMoveOrResult
@@ -298,6 +298,7 @@ public class Battlefield {
         }
 
         eventPublisher.publishEvent(new EndBattleEvent(this.roomId, this.name, this.winnerId.getValue()));
+        this.currentState = BattleStateEnum.outBattle;
     }
 
     // endregion

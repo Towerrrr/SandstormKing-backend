@@ -8,6 +8,7 @@ public enum BattleStateEnum {
     selectCard,
     moveAttackerToRestZone,
     swapAttackAndDefense,
-    endBattle;
+    endBattle,
+    outBattle;
 
 }
