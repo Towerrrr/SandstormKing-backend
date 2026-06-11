@@ -23,6 +23,8 @@ import com.t0r.sandstormkingbackend.game.challenger.model.vo.ChallengerPlayerVO;
 import com.t0r.sandstormkingbackend.game.challenger.model.vo.RoomGameStateVO;
 import com.t0r.sandstormkingbackend.handler.RSocketGameHandler;
 import com.t0r.sandstormkingbackend.model.dto.game.GameMessage;
+import com.t0r.sandstormkingbackend.service.UserService;
+import com.t0r.sandstormkingbackend.service.impl.UserServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -48,6 +50,9 @@ public class ChallengerController {
     @Resource
     private PlayerWaitManager playerWaitManager;
 
+    @Resource
+    private UserService userServiceImpl;
+
     // ==================== Request-Response 端点 ====================
 
     @MessageMapping("challenger.getPlayer")
@@ -61,8 +66,8 @@ public class ChallengerController {
         
         ChallengerPlayer challengerPlayer = roomGameState.getChallengerPlayers().get(userId);
         ThrowUtils.throwIf(challengerPlayer == null, ErrorCode.NOT_FOUND_ERROR, "玩家不存在");
-        
-        return Mono.just(new ChallengerPlayerSelf(challengerPlayer));
+
+        return Mono.just(new ChallengerPlayerSelf(challengerPlayer, userServiceImpl.getUserNameById(userId)));
     }
 
     @MessageMapping("challenger.getPlayerVO")
@@ -77,7 +82,7 @@ public class ChallengerController {
         ChallengerPlayer challengerPlayer = roomGameState.getChallengerPlayers().get(targetUserId);
         ThrowUtils.throwIf(challengerPlayer == null, ErrorCode.NOT_FOUND_ERROR, "玩家不存在");
         
-        return Mono.just(new ChallengerPlayerVO(challengerPlayer));
+        return Mono.just(new ChallengerPlayerVO(challengerPlayer, userServiceImpl.getUserNameById(targetUserId)));
     }
 
     @MessageMapping("challenger.getBattlefield")

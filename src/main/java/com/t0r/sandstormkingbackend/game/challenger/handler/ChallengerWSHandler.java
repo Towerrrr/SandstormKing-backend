@@ -107,7 +107,7 @@ public class ChallengerWSHandler {
 
         // TODO 后续考虑优化一个 ChallengerPlayerVO
         ChallengerPlayer challengerPlayer = roomGameState.getChallengerPlayers().get(userId);
-        gameMessage.setBody(JSONUtil.toJsonStr(new ChallengerPlayerSelf(challengerPlayer)));
+//        gameMessage.setBody(JSONUtil.toJsonStr(new ChallengerPlayerSelf(challengerPlayer)));
         return MessageBroadcastTypeEnum.SELF;
     }
 
@@ -116,7 +116,7 @@ public class ChallengerWSHandler {
 
         long userId = Long.parseLong(gameMessage.getBody());
         ChallengerPlayer challengerPlayer = roomGameState.getChallengerPlayers().get(userId);
-        gameMessage.setBody(JSONUtil.toJsonStr(new ChallengerPlayerVO(challengerPlayer)));
+//        gameMessage.setBody(JSONUtil.toJsonStr(new ChallengerPlayerVO(challengerPlayer)));
         return MessageBroadcastTypeEnum.SELF;
     }
 

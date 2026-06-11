@@ -10,6 +10,7 @@ import java.util.*;
 public class ChallengerPlayerVO {
 
     private String userId;
+    private String userName;
 
     // 回合数 -> 战场名
     private Map<String, String> battlefieldSchedules;
@@ -20,8 +21,9 @@ public class ChallengerPlayerVO {
 
     private Integer totalFanCount;
 
-    public ChallengerPlayerVO(ChallengerPlayer challengerPlayer) {
+    public ChallengerPlayerVO(ChallengerPlayer challengerPlayer, String userName) {
         this.userId = challengerPlayer.getUserId().toString();
+        this.userName = userName;
         this.battlefieldSchedules = challengerPlayer.getBattlefieldSchedules();
         this.cupInstanceRounds = new ArrayList<>();
         challengerPlayer.getCupInstances().forEach(

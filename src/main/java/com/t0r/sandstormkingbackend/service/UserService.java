@@ -9,10 +9,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
-* @author Towerrrr
-* @description 针对表【user(用户)】的数据库操作Service
-* @createDate 2025-10-24 22:30:42
-*/
+ * @author Towerrrr
+ * @description 针对表【user(用户)】的数据库操作Service
+ * @createDate 2025-10-24 22:30:42
+ */
 public interface UserService extends IService<User> {
 
     /**
@@ -61,4 +61,12 @@ public interface UserService extends IService<User> {
     UserVO getUserVO(User user);
 
     List<UserVO> getUsersByIds(List<Long> userIdList);
+
+    /**
+     * 根据用户 id 获取用户名
+     *
+     * @param userId 用户 id
+     * @return 用户名
+     */
+    String getUserNameById(Long userId);
 }

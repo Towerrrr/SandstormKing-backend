@@ -14,6 +14,7 @@ import java.util.Map;
 public class ChallengerPlayerSelf {
 
     private String userId;
+    private String userName;
 
     // 回合数 -> 战场名
     private Map<String, String> battlefieldSchedules;
@@ -26,8 +27,9 @@ public class ChallengerPlayerSelf {
 
     private LinkedList<CardInstance> handCardInstances;
 
-    public ChallengerPlayerSelf(ChallengerPlayer challengerPlayer) {
+    public ChallengerPlayerSelf(ChallengerPlayer challengerPlayer, String userName) {
         this.userId = challengerPlayer.getUserId().toString();
+        this.userName = userName;
         this.battlefieldSchedules = challengerPlayer.getBattlefieldSchedules();
         this.cupInstances = challengerPlayer.getCupInstances();
         this.extraFanCount = challengerPlayer.getExtraFanCount();

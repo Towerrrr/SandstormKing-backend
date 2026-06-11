@@ -27,14 +27,14 @@ import java.util.stream.Collectors;
 import static com.t0r.sandstormkingbackend.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
-* @author Towerrrr
-* @description 针对表【user(用户)】的数据库操作Service实现
-* @createDate 2025-10-24 22:30:42
-*/
+ * @author Towerrrr
+ * @description 针对表【user(用户)】的数据库操作Service实现
+ * @createDate 2025-10-24 22:30:42
+ */
 @Slf4j
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
-    implements UserService {
+        implements UserService {
 
     @Resource
     private UserMapper userMapper;
@@ -176,15 +176,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public String getUserNameById(Long userId) {
+        if (userId == null || userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户id错误");
+        }
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+        }
+        return user.getUserName();
+    }
+
     public String getEncryptPassword(String userPassword) {
         // 盐值，混淆密码
         final String SALT = "t0r";
         return DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
     }
 
-
 }
-
-
-
-
