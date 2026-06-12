@@ -37,11 +37,22 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest,
+            HttpServletRequest request) {
         ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR);
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getUserPassword();
         LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
+        return ResultUtils.success(loginUserVO);
+    }
+
+    @PostMapping("/guestLogin")
+    public BaseResponse<LoginUserVO> guestLogin(
+            @RequestBody com.t0r.sandstormkingbackend.model.dto.user.GuestLoginRequest guestLoginRequest,
+            HttpServletRequest request) {
+        ThrowUtils.throwIf(guestLoginRequest == null, ErrorCode.PARAMS_ERROR);
+        String userName = guestLoginRequest.getUserName();
+        LoginUserVO loginUserVO = userService.guestLogin(userName, request);
         return ResultUtils.success(loginUserVO);
     }
 
@@ -80,4 +91,3 @@ public class UserController {
         return ResultUtils.success(userService.getUsersByIds(userIdList));
     }
 }
-

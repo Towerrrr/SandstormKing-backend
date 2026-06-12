@@ -69,4 +69,13 @@ public interface UserService extends IService<User> {
      * @return 用户名
      */
     String getUserNameById(Long userId);
+
+    /**
+     * 游客登录（持久化账户）
+     *
+     * @param userName 游客的展示用户名（必填）
+     * @param request
+     * @return 脱敏后的用户信息
+     */
+    LoginUserVO guestLogin(String userName, HttpServletRequest request);
 }

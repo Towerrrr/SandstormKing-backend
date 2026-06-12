@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.t0r.sandstormkingbackend.constant.UserConstant.USER_LOGIN_STATE;
@@ -101,6 +102,39 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
         // 3. 记录用户的登录态
+        request.getSession().setAttribute(USER_LOGIN_STATE, user);
+        return this.getLoginUserVO(user);
+    }
+
+    @Override
+    public LoginUserVO guestLogin(String userName, HttpServletRequest request) {
+        if (StrUtil.hasBlank(userName)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名为空");
+        }
+        if (userName.length() < 2 || userName.length() > 20) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名长度应为2-20个字符");
+        }
+        // 生成唯一的游客 account
+        String userAccount;
+        do {
+            userAccount = "guest_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+            QueryWrapper<User> qw = new QueryWrapper<>();
+            qw.eq("userAccount", userAccount);
+            if (this.baseMapper.selectCount(qw) == 0) {
+                break;
+            }
+        } while (true);
+        // 插入用户（密码留空）
+        User user = new User();
+        user.setUserAccount(userAccount);
+        user.setUserPassword("");
+        user.setUserName(userName);
+        user.setUserRole(UserRoleEnum.USER.getValue());
+        boolean saveResult = this.save(user);
+        if (!saveResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "游客登录失败");
+        }
+        // 记录会话
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
         return this.getLoginUserVO(user);
     }
