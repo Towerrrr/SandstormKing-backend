@@ -22,6 +22,9 @@ public class ConditionAndResult {
         boolean condition = false;
         int conditionValue = 0;
         switch (conditionEnum) {
+            case CONDITION_TRUE:
+                condition = true;
+                break;
             case PREVIOUS_MATCH_LOST:
                 condition = selfInfo.isPreviousRoundLose(currentRound);
                 break;

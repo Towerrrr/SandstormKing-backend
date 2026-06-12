@@ -3,6 +3,7 @@ package com.t0r.sandstormkingbackend.game.challenger.model.entity.skill.Conditio
 public enum ConditionEnum {
 
     NONE, // 无条件
+    CONDITION_TRUE, // 条件直接为 true（在非立即触发的技能中出现）
 
     PREVIOUS_MATCH_LOST, // 上一场比赛输了
     PER_5_FAN, // 每有 5 个粉丝

@@ -5,7 +5,15 @@
     "basePower": 1,
     "group": "submarine",
     "level": "A",
-    "skillDescription": "如果你的休息区中至少有一张 submarine 卡牌，这张卡牌获得+3。"
+    "skillDescription": "如果你的休息区中至少有一张 submarine 卡牌，这张卡牌获得+3。",
+    "timeRange": "IMMEDIATELY",
+    "skillType": "CONDITION_AND_RESULT",
+    "conditionAndResultParam": {
+      "conditionEnum": "HAS_X_GROUP_REST",
+      "commonParam": "submarine",
+      "resultEnum": "THIS_CARD_POWER",
+      "resultIncrement": 3
+    }
   },
   {
     "id": 12,
@@ -13,7 +21,14 @@
     "basePower": 2,
     "group": "submarine",
     "level": "A",
-    "skillDescription": "控制旗帜：这张卡牌获得+2。"
+    "skillDescription": "夺旗成功：这张卡牌获得+2。",
+    "timeRange": "CAPTURE_FLAG",
+    "skillType": "CONDITION_AND_RESULT",
+    "conditionAndResultParam": {
+      "conditionEnum": "CONDITION_TRUE",
+      "resultEnum": "THIS_CARD_POWER",
+      "resultIncrement": 2
+    }
   },
   {
     "id": 13,
@@ -38,7 +53,12 @@
     "basePower": 2,
     "group": "submarine",
     "level": "B",
-    "skillDescription": "在休息区：你控制旗帜的卡牌获得+1。"
+    "skillDescription": "在休息区：你控制旗帜的卡牌获得+1。",
+    "buffType": "REST",
+    "buffConfigParam": {
+      "timeRange": "CONTROL_FLAG",
+      "extraPower": "1"
+    }
   },
   {
     "id": 16,
@@ -46,7 +66,14 @@
     "basePower": 4,
     "group": "submarine",
     "level": "B",
-    "skillDescription": "如果你的牌组只剩一张或者没有卡牌，这张卡牌获得+2。"
+    "skillDescription": "如果你的牌组只剩一张或者没有卡牌，这张卡牌获得+2。",
+    "timeRange": "IMMEDIATELY",
+    "skillType": "CONDITION_AND_RESULT",
+    "conditionAndResultParam": {
+      "conditionEnum": "HAND_NEARLY_EMPTY",
+      "resultEnum": "THIS_CARD_POWER",
+      "resultIncrement": 2
+    }
   },
   {
     "id": 17,
@@ -88,6 +115,14 @@
     "basePower": 9,
     "group": "submarine",
     "level": "C",
-    "skillDescription": "将你牌组中最底下的那张牌放入你的消耗牌堆。"
+    "skillDescription": "将你牌组中最底下的那张牌放入你的消耗牌堆。",
+    "timeRange": "IMMEDIATELY",
+    "skillType": "IMMEDIATELY_MOVE",
+    "moveConfigParam": {
+      "start": "HAND_ZONE_BOTTOM",
+      "count": 1,
+      "type": "CARD_INSTANCE",
+      "end": "CONSUMED_DECK"
+    }
   }
 ]

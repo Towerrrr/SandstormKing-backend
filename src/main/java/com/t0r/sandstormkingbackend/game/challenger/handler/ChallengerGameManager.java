@@ -58,7 +58,13 @@ public class ChallengerGameManager {
         log.info("加载卡牌数据");
         try {
             PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-            Resource[] resources = resolver.getResources("classpath:cards/*.json");
+            // TODO 测试卡牌
+            // Resource[] resources = resolver.getResources("classpath:cards/*.json");
+
+            Resource[] resources = new Resource[] {
+                    resolver.getResource("classpath:cards/0city_S.json"),
+                    resolver.getResource("classpath:cards/2submarine.json")
+            };
 
             int totalCount = 0;
             for (Resource resource : resources) {
