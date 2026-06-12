@@ -2,6 +2,8 @@ package com.t0r.sandstormkingbackend.game.challenger.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
+import com.t0r.sandstormkingbackend.common.BaseResponse;
+import com.t0r.sandstormkingbackend.common.ResultUtils;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
 import com.t0r.sandstormkingbackend.game.challenger.handler.ChallengerGameManager;
@@ -60,10 +62,10 @@ public class ChallengerController {
         Long roomId = request.getRoomId();
         Long userId = request.getUserId();
         log.info("获取玩家信息，房间：{}，用户：{}", roomId, userId);
-        
+
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
         ThrowUtils.throwIf(roomGameState == null, ErrorCode.NOT_FOUND_ERROR, "房间不存在");
-        
+
         ChallengerPlayer challengerPlayer = roomGameState.getChallengerPlayers().get(userId);
         ThrowUtils.throwIf(challengerPlayer == null, ErrorCode.NOT_FOUND_ERROR, "玩家不存在");
 
@@ -75,13 +77,13 @@ public class ChallengerController {
         Long roomId = request.getRoomId();
         Long targetUserId = request.getTargetUserId();
         log.info("获取玩家VO，房间：{}，目标用户：{}", roomId, targetUserId);
-        
+
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
         ThrowUtils.throwIf(roomGameState == null, ErrorCode.NOT_FOUND_ERROR, "房间不存在");
-        
+
         ChallengerPlayer challengerPlayer = roomGameState.getChallengerPlayers().get(targetUserId);
         ThrowUtils.throwIf(challengerPlayer == null, ErrorCode.NOT_FOUND_ERROR, "玩家不存在");
-        
+
         return Mono.just(new ChallengerPlayerVO(challengerPlayer, userServiceImpl.getUserNameById(targetUserId)));
     }
 
@@ -90,15 +92,15 @@ public class ChallengerController {
         Long roomId = request.getRoomId();
         String battlefieldName = request.getBattlefieldName();
         log.info("获取战场信息，房间：{}，战场：{}", roomId, battlefieldName);
-        
+
         ThrowUtils.throwIf(battlefieldName == null, ErrorCode.PARAMS_ERROR, "请选择战斗场");
-        
+
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
         ThrowUtils.throwIf(roomGameState == null, ErrorCode.NOT_FOUND_ERROR, "房间不存在");
-        
+
         Battlefield battlefield = roomGameState.getTempBattlefields().get(battlefieldName);
         ThrowUtils.throwIf(battlefield == null, ErrorCode.NOT_FOUND_ERROR, "战场不存在");
-        
+
         return Mono.just(new BattlefieldVO(battlefield));
     }
 
@@ -106,10 +108,10 @@ public class ChallengerController {
     public Mono<RoomGameStateVO> getRoomState(@Payload GetRoomStateRequest request) {
         Long roomId = request.getRoomId();
         log.info("获取房间状态，房间：{}", roomId);
-        
+
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
         ThrowUtils.throwIf(roomGameState == null, ErrorCode.NOT_FOUND_ERROR, "房间不存在");
-        
+
         RoomGameStateVO roomGameStateVO = BeanUtil.copyProperties(roomGameState, RoomGameStateVO.class);
         return Mono.just(roomGameStateVO);
     }
@@ -121,12 +123,12 @@ public class ChallengerController {
         Integer optionId = request.getOptionId();
         Set<Integer> selectedCardInstanceIds = request.getSelectedCardInstanceIds();
         log.info("构建牌组，房间：{}，用户：{}，选项：{}", roomId, userId, optionId);
-        
+
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
         ThrowUtils.throwIf(roomGameState == null, ErrorCode.NOT_FOUND_ERROR, "房间不存在");
-        
-        LinkedList<CardInstance> cardInstances = 
-                roomGameState.buildCardInstances(userId, optionId, selectedCardInstanceIds);
+
+        LinkedList<CardInstance> cardInstances = roomGameState.buildCardInstances(userId, optionId,
+                selectedCardInstanceIds);
         return Mono.just(cardInstances);
     }
 
@@ -136,26 +138,35 @@ public class ChallengerController {
         Long userId = request.getUserId();
         String battlefieldName = request.getBattlefieldName();
         log.info("准备战斗，房间：{}，用户：{}，战场：{}", roomId, userId, battlefieldName);
-        
+
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
         ThrowUtils.throwIf(roomGameState == null, ErrorCode.NOT_FOUND_ERROR, "房间不存在");
-        
+
         roomGameState.readyBattle(battlefieldName, userId);
         return Mono.empty();
     }
 
     @MessageMapping("challenger.discardCard")
-    public Mono<Void> discardCard(@Payload DiscardCardRequest request) {
+    public Mono<BaseResponse<Boolean>> discardCard(@Payload DiscardCardRequest request) {
         Long roomId = request.getRoomId();
         Long userId = request.getUserId();
         Set<Integer> cardInstanceIds = request.getCardInstanceIds();
-        log.info("弃牌，房间：{}，用户：{}，卡牌数：{}", roomId, userId, cardInstanceIds.size());
-        
+        log.info("弃牌，房间：{}，用户：{}，卡牌数：{}", roomId, userId, cardInstanceIds == null ? 0 : cardInstanceIds.size());
+
+        // TODO 后续再考虑健壮性
+        if (cardInstanceIds == null || cardInstanceIds.isEmpty()) {
+//            return Mono.just(ResultUtils.error(ErrorCode.PARAMS_ERROR, "请选择要弃掉的卡牌"));
+        }
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
-        ThrowUtils.throwIf(roomGameState == null, ErrorCode.NOT_FOUND_ERROR, "房间不存在");
-        
+        if (roomGameState == null) {
+//            return Mono.just(ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "房间不存在"));
+        }
+        if (roomGameState.getChallengerPlayers().get(userId) == null) {
+//            return Mono.just(ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "玩家不存在"));
+        }
+
         roomGameState.discardCardInstances(userId, cardInstanceIds);
-        return Mono.empty();
+        return Mono.just(ResultUtils.success(true));
     }
 
     @MessageMapping("challenger.cardSelect")
