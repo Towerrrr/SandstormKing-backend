@@ -109,15 +109,14 @@ public class DeckManager {
     }
 
     /**
-     * 处理临时选择：把选中的放入 selectedCards，未选中的放入弃牌堆，清空 temp 列表。
+     * 把选中的卡放到手牌，未选中的卡放入弃牌堆
      */
     public void processSelection(ChallengerPlayer currentPlayer, Set<Integer> selectedCardInstanceIds) {
         LinkedList<CardInstance> tempSelected = currentPlayer.getTempSelectedCardInstances();
-        Set<CardInstance> selectedCards = currentPlayer.getSelectedCards();
         for (CardInstance cardInstance : tempSelected) {
             String level = cardMap.get(cardInstance.getCardId()).getLevel();
             if (selectedCardInstanceIds != null && selectedCardInstanceIds.contains(cardInstance.getId())) {
-                selectedCards.add(cardInstance);
+                currentPlayer.getHandCardInstances().add(cardInstance);
             } else {
                 discardDecks.get(level).add(cardInstance);
             }

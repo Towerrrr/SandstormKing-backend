@@ -70,6 +70,8 @@ public class RoomGameState {
     // 战场名 -> 战场
     private Map<String, Battlefield> tempBattlefields = new ConcurrentHashMap<>();
 
+    private static final int MAX_DRAW_ATTEMPTS = 2;
+
     // endregion
 
     // region 构造方法
@@ -216,57 +218,58 @@ public class RoomGameState {
     // region 构筑阶段
 
     /**
-     * 1. 选择选项（第一次抽卡）
-     * 2. 确认选择 / 再次抽卡 / 部分选择 & 再次抽卡
-     * 3. 确认选择
+     * 抽卡：初始抽卡 （只会调用一次）
      */
-    public LinkedList<CardInstance> buildCardInstances(Long userId, Integer OptionId,
-            Set<Integer> selectedCardInstanceIds) {
-        log.info("用户 {} 构筑卡牌, 选项 {}", userId, OptionId);
+    public LinkedList<CardInstance> drawCards(Long userId, Integer optionId) {
+        log.info("用户 {} 抽卡, 选项 {}", userId, optionId);
 
         ChallengerPlayer currentPlayer = challengerPlayers.get(userId);
-        Option option = getOption(OptionId);
+        Option option = getOption(optionId);
         String level = option.getLevel();
-        Integer drawCount = option.getDrawCount();
         Integer fanCount = option.getFanCount();
 
-        if (selectedCardInstanceIds == null || selectedCardInstanceIds.isEmpty()) {
-            if (currentPlayer.isSecondSelect()) {
-                log.info("用户 {} 第二次抽取卡牌（第一次未选择）", userId);
-                selectAndDiscardCardInstances(currentPlayer, null);
-                drawCardInstances(currentPlayer, level);
-                currentPlayer.setSecondSelect(false);
-            } else {
-                log.info("用户 {} 第一次抽取卡牌", userId);
-                drawCardInstances(currentPlayer, level);
-                currentPlayer.setExtraFanCount(currentPlayer.getExtraFanCount() + fanCount);
-                currentPlayer.setSecondSelect(true);
-            }
-        } else {
-            selectAndDiscardCardInstances(currentPlayer, selectedCardInstanceIds);
-
-            Set<CardInstance> selectedCards = currentPlayer.getSelectedCards();
-            ThrowUtils.throwIf(selectedCards.size() > drawCount, ErrorCode.PARAMS_ERROR,
-                    "选择的卡牌数不可超过" + drawCount);
-            if (selectedCards.size() == drawCount) {
-                log.info("用户 {} 确认选择卡牌", userId);
-                confirmSelect(userId);
-            } else {
-                log.info("用户 {} 部分选择，再次抽卡", userId);
-                drawCardInstances(currentPlayer, level);
-            }
-            currentPlayer.setSecondSelect(false);
-        }
+        drawCardInstances(currentPlayer, level, 0);
+        currentPlayer.addExtraFanCount(fanCount);
+        currentPlayer.addDrawAttemptCount(1);
 
         return currentPlayer.getTempSelectedCardInstances();
     }
 
-    private void confirmSelect(Long userId) {
+    /**
+     * 确认选择：处理选择、满额确认、部分选择补抽、达上限自动确认
+     */
+    public LinkedList<CardInstance> confirmSelection(Long userId, Integer optionId,
+                                                     Set<Integer> selectedCardInstanceIds) {
+        log.info("用户 {} 确认选择卡牌, 选项 {}", userId, optionId);
+
         ChallengerPlayer currentPlayer = challengerPlayers.get(userId);
-        Set<CardInstance> selectedCards = currentPlayer.getSelectedCards();
-        LinkedList<CardInstance> handCardInstances = currentPlayer.getHandCardInstances();
-        handCardInstances.addAll(selectedCards);
-        selectedCards.clear();
+        Option option = getOption(optionId);
+        String level = option.getLevel();
+        Integer drawCount = option.getDrawCount();
+
+        ThrowUtils.throwIf(selectedCardInstanceIds.size() > drawCount, ErrorCode.PARAMS_ERROR,
+                "选择的卡牌数不可超过" + drawCount);
+
+        deckManager.processSelection(currentPlayer, selectedCardInstanceIds);
+        currentPlayer.addDrawCardCount(selectedCardInstanceIds.size());
+
+        if (currentPlayer.getDrawCardCount() >= drawCount) {
+            log.info("用户 {} 达到抽卡数量上限，不再抽卡，直接确认已选", userId);
+            currentPlayer.setDrawAttemptCount(0);
+            currentPlayer.setDrawCardCount(0);
+            return currentPlayer.getTempSelectedCardInstances();
+        }
+
+        if (currentPlayer.getDrawAttemptCount() >= MAX_DRAW_ATTEMPTS) {
+            log.info("用户 {} 达到抽卡次数上限，但是没有选择到最大上限，不再抽卡，直接确认已选", userId);
+            currentPlayer.setDrawCardCount(0);
+            currentPlayer.setDrawAttemptCount(0);
+            return currentPlayer.getTempSelectedCardInstances();
+        }
+
+        currentPlayer.addDrawAttemptCount(1);
+        drawCardInstances(currentPlayer, level, selectedCardInstanceIds.size());
+        return currentPlayer.getTempSelectedCardInstances();
     }
 
     /**
@@ -282,15 +285,13 @@ public class RoomGameState {
         return null;
     }
 
-    private void drawCardInstances(ChallengerPlayer currentPlayer, String level) {
+    private void drawCardInstances(ChallengerPlayer currentPlayer, String level, int selectedCount) {
         final int DRAW_COUNT = 5;
 
-        LinkedList<CardInstance> draws = deckManager.draw(level, DRAW_COUNT);
-        currentPlayer.getTempSelectedCardInstances().addAll(draws);
-    }
-
-    private void selectAndDiscardCardInstances(ChallengerPlayer currentPlayer, Set<Integer> selectedCardInstanceIds) {
-        deckManager.processSelection(currentPlayer, selectedCardInstanceIds);
+        LinkedList<CardInstance> draws = deckManager.draw(level, DRAW_COUNT - selectedCount);
+        if (draws != null && !draws.isEmpty()) {
+            currentPlayer.getTempSelectedCardInstances().addAll(draws);
+        }
     }
 
     public void readyBattle(String battlefield, Long userId) {
@@ -324,8 +325,8 @@ public class RoomGameState {
     }
 
     public static void discardCardInstances(LinkedList<CardInstance> handCardInstances,
-            Set<Integer> cardInstanceIds,
-            Map<String, Deque<CardInstance>> discardDecks) {
+                                            Set<Integer> cardInstanceIds,
+                                            Map<String, Deque<CardInstance>> discardDecks) {
         Iterator<CardInstance> iterator = handCardInstances.iterator();
         while (iterator.hasNext()) {
             CardInstance cardInstance = iterator.next();

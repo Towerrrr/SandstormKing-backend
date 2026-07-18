@@ -4,7 +4,8 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
 import com.t0r.sandstormkingbackend.exception.ErrorCode;
 import com.t0r.sandstormkingbackend.exception.ThrowUtils;
-import com.t0r.sandstormkingbackend.game.challenger.model.dto.BuildDeckRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.ConfirmSelectionRequest;
+import com.t0r.sandstormkingbackend.game.challenger.model.dto.DrawCardsRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.dto.InitGameRequest;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.Card;
 import com.t0r.sandstormkingbackend.game.challenger.model.entity.CardInstance;
@@ -31,6 +32,7 @@ import java.util.Set;
 
 @Slf4j
 @Component
+@Deprecated
 public class ChallengerWSHandler {
 
     @Resource
@@ -53,8 +55,10 @@ public class ChallengerWSHandler {
                 return handleGetBattlefieldMessage(gameMessage, roomId);
             case GET_ROOM_STATE:
                 return handleGetRoomStateMessage(gameMessage, roomId);
-            case BUILD_DECK:
-                return handleBuildDeckMessage(gameMessage, roomId, user.getId());
+            case DRAW_CARDS:
+                return handleDrawCardsMessage(gameMessage, roomId, user.getId());
+            case CONFIRM_SELECTION:
+                return handleConfirmSelectionMessage(gameMessage, roomId, user.getId());
             case READY_BATTLE:
                 handleReadyBattleMessage(gameMessage, roomId, user.getId());
                 break;
@@ -126,15 +130,26 @@ public class ChallengerWSHandler {
         roomGameState.readyBattle(battlefield, userId);
     }
 
-    private MessageBroadcastTypeEnum handleBuildDeckMessage(GameMessage gameMessage, Long roomId, Long userId) {
+    private MessageBroadcastTypeEnum handleDrawCardsMessage(GameMessage gameMessage, Long roomId, Long userId) {
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
 
         String body = gameMessage.getBody();
-        BuildDeckRequest buildDeckRequest = JSONUtil.toBean(body, BuildDeckRequest.class);
-        Integer optionId = buildDeckRequest.getOptionId();
-        Set<Integer> selectedCardInstanceIds = buildDeckRequest.getSelectedCardInstanceIds();
+        DrawCardsRequest drawCardsRequest = JSONUtil.toBean(body, DrawCardsRequest.class);
+        Integer optionId = drawCardsRequest.getOptionId();
+        LinkedList<CardInstance> cardInstances = roomGameState.drawCards(userId, optionId);
+        gameMessage.setBody(JSONUtil.toJsonStr(cardInstances));
+        return MessageBroadcastTypeEnum.SELF;
+    }
+
+    private MessageBroadcastTypeEnum handleConfirmSelectionMessage(GameMessage gameMessage, Long roomId, Long userId) {
+        RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
+
+        String body = gameMessage.getBody();
+        ConfirmSelectionRequest confirmSelectionRequest = JSONUtil.toBean(body, ConfirmSelectionRequest.class);
+        Integer optionId = confirmSelectionRequest.getOptionId();
+        Set<Integer> selectedCardInstanceIds = confirmSelectionRequest.getSelectedCardInstanceIds();
         LinkedList<CardInstance> cardInstances =
-                roomGameState.buildCardInstances(userId, optionId, selectedCardInstanceIds);
+                roomGameState.confirmSelection(userId, optionId, selectedCardInstanceIds);
         gameMessage.setBody(JSONUtil.toJsonStr(cardInstances));
         return MessageBroadcastTypeEnum.SELF;
     }

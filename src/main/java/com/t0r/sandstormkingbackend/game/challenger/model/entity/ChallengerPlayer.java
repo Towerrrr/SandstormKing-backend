@@ -16,8 +16,8 @@ public class ChallengerPlayer {
 
     private LinkedList<CardInstance> handCardInstances = new LinkedList<>();
 
-    private boolean isSecondSelect = false;
-    private Set<CardInstance> selectedCards = new HashSet<>(); // 用来处理第一次选择只部分选择
+    private int drawAttemptCount = 0; // 已抽取次数
+    private int drawCardCount = 0; // 已抽取卡牌数
     private LinkedList<CardInstance> tempSelectedCardInstances = new LinkedList<>();
 
     private List<CupInstance> cupInstances = new ArrayList<>();
@@ -30,6 +30,16 @@ public class ChallengerPlayer {
         this.userId = userId;
         this.battlefieldSchedules = battlefieldSchedules;
         Arrays.stream(RoundEnum.values()).forEach(roundEnum -> this.battlefieldResults.put(roundEnum.getValue(), null));
+    }
+
+    public void addExtraFanCount(int value) {
+        this.extraFanCount += value;
+    }
+    public void addDrawAttemptCount(int value) {
+        this.drawAttemptCount += value;
+    }
+    public void addDrawCardCount(int value) {
+        this.drawCardCount += value;
     }
 
     public boolean isPreviousRoundLose(String currentRound) {

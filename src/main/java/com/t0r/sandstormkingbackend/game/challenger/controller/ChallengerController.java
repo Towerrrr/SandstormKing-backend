@@ -116,18 +116,32 @@ public class ChallengerController {
         return Mono.just(roomGameStateVO);
     }
 
-    @MessageMapping("challenger.buildDeck")
-    public Mono<List<CardInstance>> buildDeck(@Payload BuildDeckRequest request) {
+    @MessageMapping("challenger.drawCards")
+    public Mono<List<CardInstance>> drawCards(@Payload DrawCardsRequest request) {
         Long roomId = request.getRoomId();
         Long userId = request.getUserId();
         Integer optionId = request.getOptionId();
-        Set<Integer> selectedCardInstanceIds = request.getSelectedCardInstanceIds();
-        log.info("构建牌组，房间：{}，用户：{}，选项：{}", roomId, userId, optionId);
+        log.info("抽卡，房间：{}，用户：{}，选项：{}", roomId, userId, optionId);
 
         RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
         ThrowUtils.throwIf(roomGameState == null, ErrorCode.NOT_FOUND_ERROR, "房间不存在");
 
-        LinkedList<CardInstance> cardInstances = roomGameState.buildCardInstances(userId, optionId,
+        LinkedList<CardInstance> cardInstances = roomGameState.drawCards(userId, optionId);
+        return Mono.just(cardInstances);
+    }
+
+    @MessageMapping("challenger.confirmSelection")
+    public Mono<List<CardInstance>> confirmSelection(@Payload ConfirmSelectionRequest request) {
+        Long roomId = request.getRoomId();
+        Long userId = request.getUserId();
+        Integer optionId = request.getOptionId();
+        Set<Integer> selectedCardInstanceIds = request.getSelectedCardInstanceIds();
+        log.info("确认选择，房间：{}，用户：{}，选项：{}", roomId, userId, optionId);
+
+        RoomGameState roomGameState = challengerGameManager.getRoomGameStateMap().get(roomId);
+        ThrowUtils.throwIf(roomGameState == null, ErrorCode.NOT_FOUND_ERROR, "房间不存在");
+
+        LinkedList<CardInstance> cardInstances = roomGameState.confirmSelection(userId, optionId,
                 selectedCardInstanceIds);
         return Mono.just(cardInstances);
     }

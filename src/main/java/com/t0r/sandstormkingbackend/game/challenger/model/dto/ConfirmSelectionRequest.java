@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Set;
 
 @Data
-public class BuildDeckRequest {
+public class ConfirmSelectionRequest {
 
     private Long roomId;
     private Long userId;
